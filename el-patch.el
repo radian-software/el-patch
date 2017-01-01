@@ -288,10 +288,11 @@ in the C code.)"
                            ;; definition, we don't temporarily
                            ;; scroll the window if the definition
                            ;; happens to be in the *current* buffer.
-                           (advice-add #'get-file-buffer :override
-                                       #'ignore)
-                           (find-function-noselect name 'lisp-only)
-                           (advice-remove #'get-file-buffer #'ignore))))
+                           (prog2
+                               (advice-add #'get-file-buffer :override
+                                           #'ignore)
+                               (find-function-noselect name 'lisp-only)
+                             (advice-remove #'get-file-buffer #'ignore)))))
          (defun-buffer (car buffer-point))
          (defun-point (cdr buffer-point)))
     (and defun-buffer
