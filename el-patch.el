@@ -1,4 +1,4 @@
-;;; el-patch.el --- Future-proof your Emacs Lisp customizations
+;;; el-patch.el --- Future-proof your Emacs Lisp customizations!
 
 ;; Copyright (C) 2016 Radon Rosborough
 
