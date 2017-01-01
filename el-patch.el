@@ -355,15 +355,24 @@ etc."
 (defun el-patch--ediff-forms (name1 form1 name2 form2)
   "Obtains empty buffers named NAME1 and NAME2, pretty-prints
 FORM1 and FORM2 into them respectively, and run Ediff on the two
-buffers."
-  (with-current-buffer (get-buffer-create name1)
-    (erase-buffer)
-    (pp form1 (current-buffer)))
-  (with-current-buffer (get-buffer-create name2)
-    (erase-buffer)
-    (pp form2 (current-buffer)))
-  (ediff-buffers (get-buffer name1)
-                 (get-buffer name2)))
+buffers wordwise."
+  (let ((min1) (max1) (min2) (max2))
+    (with-current-buffer (get-buffer-create name1)
+      (erase-buffer)
+      (pp form1 (current-buffer))
+      (setq min1 (point-min)
+            max1 (point-max)))
+    (with-current-buffer (get-buffer-create name2)
+      (erase-buffer)
+      (pp form2 (current-buffer))
+      (setq min2 (point-min)
+            max2 (point-max)))
+    (eval-and-compile
+      (require 'ediff))
+    (ediff-regions-internal
+     (get-buffer name1) min1 max1
+     (get-buffer name2) min2 max2
+     nil 'ediff-regions-wordwise 'word-mode nil)))
 
 ;;;###autoload
 (defun el-patch-ediff-patch (patch-definition)
