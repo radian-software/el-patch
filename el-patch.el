@@ -312,26 +312,37 @@ warning will be signaled if the original definition for a patched
 function cannot be found, or if there is a different between the
 actual and expected original definitions."
   (interactive)
-  (let ((any-patches nil))
+  (let ((patch-count 0)
+        (warning-count 0))
     (maphash (lambda (name patch-definition)
-               (setq any-patches t)
+               (setq patch-count (1+ patch-count))
                (let ((old-definition (el-patch--resolve-definition
                                       patch-definition nil))
                      (actual-definition (el-patch--find-function name)))
                  (cond
                   ((not actual-definition)
+                   (setq warning-count (1+ warning-count))
                    (display-warning
                     'el-patch
                     (format "Could not find definition of `%S'" name)))
                   ((not (equal old-definition actual-definition))
+                   (setq warning-count (1+ warning-count))
                    (display-warning
                     'el-patch
                     (format (concat "Definition of `%S' differs from what "
                                     "is assumed by its patch")
                             name))))))
              el-patch--patches)
-    (unless any-patches
-      (user-error "No patches defined"))))
+    (cond
+     ((zerop patch-count)
+      (user-error "No patches defined"))
+     ((zerop warning-count)
+      (message "All %d patches are valid" patch-count))
+     ((= patch-count warning-count)
+      (message "All %d patches are invalid" patch-count))
+     (t
+      (message "%d patches are valid, %d patches are invalid"
+               (- patch-count warning-count) warning-count)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Viewing patches
