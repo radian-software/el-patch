@@ -207,7 +207,7 @@ as in `defmacro'."
 their containing form are removed. In the new definition, the
 ARGS are spliced into the containing s-expression."
   (declare (indent 0))
-  (error "Can't use `el-patch-add' outside of an `el-patch'"))
+  `(error "Can't use `el-patch-add' outside of an `el-patch'"))
 
 ;;;###autoload
 (defmacro el-patch-remove (&rest args)
@@ -215,7 +215,7 @@ ARGS are spliced into the containing s-expression."
 spliced into the containing s-expression. In the new definition,
 the ARGS and their containing form are removed."
   (declare (indent 0))
-  (error "Can't use `el-patch-remove' outside of an `el-patch'"))
+  `(error "Can't use `el-patch-remove' outside of an `el-patch'"))
 
 ;;;###autoload
 (defmacro el-patch-swap (old new)
@@ -223,7 +223,7 @@ the ARGS and their containing form are removed."
 into the containing s-expression. In the new definition, NEW is
 spliced instead."
   (declare (indent 0))
-  (error "Can't use `el-patch-swap' outside of an `el-patch'"))
+  `(error "Can't use `el-patch-swap' outside of an `el-patch'"))
 
 ;;;###autoload
 (defmacro el-patch-wrap (&optional triml &optional trimr args)
@@ -236,7 +236,7 @@ definition, the ARGS and their containing form are spliced into
 the containing s-expression (but the symbol `el-patch-wrap' is
 removed)."
   (declare (indent defun))
-  (error "Can't use `el-patch-wrap' outside of an `el-patch'"))
+  `(error "Can't use `el-patch-wrap' outside of an `el-patch'"))
 
 ;;;###autoload
 (defmacro el-patch-splice (&optional triml &optional trimr args)
@@ -249,7 +249,7 @@ are removed first. If TRIMR is an integer, the last TRIMR are
 also removed. If TRIML or TRIMR are not integers, they are
 interpreted as part of ARGS."
   (declare (indent defun))
-  (error "Can't use `el-patch-splice' outside of an `el-patch'"))
+  `(error "Can't use `el-patch-splice' outside of an `el-patch'"))
 
 ;;;###autoload
 (defmacro el-patch-let (varlist arg)
@@ -259,14 +259,14 @@ You may bind symbols that are also patch directives, but the
 bindings will not have effect if the symbols are used at the
 beginning of a list (they will act as patch directives)."
   (declare (indent 1))
-  (error "Can't use `el-patch-let' outside of an `el-patch'"))
+  `(error "Can't use `el-patch-let' outside of an `el-patch'"))
 
 ;;;###autoload
 (defmacro el-patch-literal (arg)
   "Patch directive. Resolves to ARG, which is not processed
 further by el-patch."
   (declare (indent 0))
-  (error "Can't use `el-patch-literal' outside of an `el-patch'"))
+  `(error "Can't use `el-patch-literal' outside of an `el-patch'"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Validating patches
