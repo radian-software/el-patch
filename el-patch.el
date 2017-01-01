@@ -303,7 +303,7 @@ in the C code.)"
              (read defun-buffer))))))
 
 ;;;###autoload
-(defun validate-patches ()
+(defun el-patch-validate-patches ()
   "Validate all the patches that have been defined in the current
 Emacs session. This means el-patch will attempt to find the
 original definition for each patched function, and verify that it
