@@ -399,11 +399,11 @@ is as returned by `el-patch--select-patch'."
          (actual-definition (el-patch--find-function name))
          (expected-definition (el-patch--resolve-definition
                                patch-definition nil)))
-    (when (equal actual-definition expected-definition)
-      (message "No conflict"))
     (el-patch--ediff-forms
      "*el-patch actual*" actual-definition
-     "*el-patch expected*" expected-definition)))
+     "*el-patch expected*" expected-definition)
+    (when (equal actual-definition expected-definition)
+      (message "No conflict"))))
 
 (provide 'el-patch)
 
