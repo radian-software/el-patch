@@ -178,6 +178,118 @@ new version."
              patch-definition))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Validating patches
+
+(defun el-patch--find-function (name)
+  "Return the Lisp form that defines the function NAME.
+Return nil if such a definition cannot be found. (That would
+happen if the definition were generated dynamically, or the
+function is defined in the C code.)"
+  (let* ((buffer-point (ignore-errors
+                         ;; Just in case we get an error because the
+                         ;; function is defined in the C code, we
+                         ;; ignore it and return nil.
+                         (save-excursion
+                           ;; This horrifying bit of hackery
+                           ;; prevents `find-function-noselect' from
+                           ;; returning an existing buffer, so that
+                           ;; later on when we jump to the
+                           ;; definition, we don't temporarily
+                           ;; scroll the window if the definition
+                           ;; happens to be in the *current* buffer.
+                           (prog2
+                               (advice-add #'get-file-buffer :override
+                                           #'ignore)
+                               (find-function-noselect name 'lisp-only)
+                             (advice-remove #'get-file-buffer #'ignore)))))
+         (defun-buffer (car buffer-point))
+         (defun-point (cdr buffer-point)))
+    (and defun-buffer
+         defun-point
+         (with-current-buffer defun-buffer
+           (save-excursion
+             (goto-char defun-point)
+             (read defun-buffer))))))
+
+;;;###autoload
+(defun el-patch-validate (name)
+  "Validate the patch for the function NAME.
+This means el-patch will attempt to find the original definition
+for the function, and verify that it is the same as the original
+function assumed by the patch. A warning will be signaled if the
+original definition for a patched function cannot be found, or if
+there is a difference between the actual and expected original
+definitions.
+
+Returns nil if the patch is not valid, and otherwise returns t.
+
+See also `el-patch-validate-all'."
+  (interactive (list (cadr (el-patch--select-patch))))
+  (let* ((patch-definition (gethash name el-patch--patches))
+         (old-definition (el-patch--resolve-definition
+                          patch-definition nil))
+         (actual-definition (el-patch--find-function name)))
+    (cond
+     ((not actual-definition)
+      (display-warning
+       'el-patch
+       (format "Could not find definition of `%S'" name))
+      nil)
+     ((not (equal old-definition actual-definition))
+
+      (display-warning
+       'el-patch
+       (format (concat "Definition of `%S' differs from what "
+                       "is assumed by its patch")
+               name)
+       nil)))))
+
+;;;###autoload
+(defun el-patch-validate-all ()
+  "Validate all currently defined patches.
+See `el-patch-validate'."
+  (interactive)
+  (let ((patch-count 0)
+        (warning-count 0))
+    (maphash (lambda (name patch-definition)
+               (setq patch-count (1+ patch-count))
+               (unless (el-patch-validate name)
+                 (setq warning-count (1+ warning-count))))
+             el-patch--patches)
+    (cond
+     ((zerop patch-count)
+      (user-error "No patches defined"))
+     ((zerop warning-count)
+      (message "All %d patches are valid" patch-count))
+     ((= patch-count warning-count)
+      (message "All %d patches are invalid" patch-count))
+     (t
+      (message "%d patches are valid, %d patches are invalid"
+               (- patch-count warning-count) warning-count)))))
+
+(defvar el-patch-validation t
+  "Whether or not to perform validation when a patch is defined.
+If non-nil, then evaluating an `el-patch-defun' or
+`el-patch-defmacro' form will automatically call
+`el-patch-validate', and will only install the patch if it
+is still valid.
+
+Validation is slow and can generate messages, so it is
+recommended that you set this variable to nil during Emacs
+startup, and then set it back to t afterwards. This can be done
+by calling the function `el-patch-disable-validation-during-init'
+in your init-file.")
+
+(defun el-patch--reenable-validation-after-init ()
+  (setq el-patch-validation t)
+  (remove-hook 'after-init-hook #'el-patch--reenable-validation-after-init))
+
+;;;###autoload
+(defun el-patch-disable-validation-during-init ()
+  (setq el-patch-validation nil)
+  (add-hook 'after-init-hook #'el-patch--reenable-validation-after-init))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Applying patches
 
 (defun el-patch--advice-name (function-name)
@@ -201,10 +313,12 @@ etc. Update `el-patch--patches', create the advice, and activate
 it."
   (let* ((function-name (cadr patch-definition))
          (advice-name (el-patch--advice-name function-name)))
-    (puthash function-name patch-definition el-patch--patches)
-    (eval (el-patch--function-to-advice
-           (el-patch--resolve-definition patch-definition t)))
-    (advice-add function-name :override advice-name)))
+    (when (or (not el-patch-validation)
+              (el-patch-validate function-name))
+      (puthash function-name patch-definition el-patch--patches)
+      (eval (el-patch--function-to-advice
+             (el-patch--resolve-definition patch-definition t)))
+      (advice-add function-name :override advice-name))))
 
 ;;;###autoload
 (defmacro el-patch-defun (&rest args)
@@ -295,82 +409,6 @@ will act as patch directives)."
 Resolves to ARG, which is not processed further by el-patch."
   (declare (indent 0))
   `(error "Can't use `el-patch-literal' outside of an `el-patch'"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; Validating patches
-
-(defun el-patch--find-function (name)
-  "Return the Lisp form that defines the function NAME.
-Return nil if such a definition cannot be found. (That would
-happen if the definition were generated dynamically, or the
-function is defined in the C code.)"
-  (let* ((buffer-point (ignore-errors
-                         ;; Just in case we get an error because the
-                         ;; function is defined in the C code, we
-                         ;; ignore it and return nil.
-                         (save-excursion
-                           ;; This horrifying bit of hackery
-                           ;; prevents `find-function-noselect' from
-                           ;; returning an existing buffer, so that
-                           ;; later on when we jump to the
-                           ;; definition, we don't temporarily
-                           ;; scroll the window if the definition
-                           ;; happens to be in the *current* buffer.
-                           (prog2
-                               (advice-add #'get-file-buffer :override
-                                           #'ignore)
-                               (find-function-noselect name 'lisp-only)
-                             (advice-remove #'get-file-buffer #'ignore)))))
-         (defun-buffer (car buffer-point))
-         (defun-point (cdr buffer-point)))
-    (and defun-buffer
-         defun-point
-         (with-current-buffer defun-buffer
-           (save-excursion
-             (goto-char defun-point)
-             (read defun-buffer))))))
-
-;;;###autoload
-(defun el-patch-validate-patches ()
-  "Validate all currently defined patches.
-This means el-patch will attempt to find the original definition
-for each patched function, and verify that it is the same as the
-original function assumed by the patch. A warning will be
-signaled if the original definition for a patched function cannot
-be found, or if there is a different between the actual and
-expected original definitions."
-  (interactive)
-  (let ((patch-count 0)
-        (warning-count 0))
-    (maphash (lambda (name patch-definition)
-               (setq patch-count (1+ patch-count))
-               (let ((old-definition (el-patch--resolve-definition
-                                      patch-definition nil))
-                     (actual-definition (el-patch--find-function name)))
-                 (cond
-                  ((not actual-definition)
-                   (setq warning-count (1+ warning-count))
-                   (display-warning
-                    'el-patch
-                    (format "Could not find definition of `%S'" name)))
-                  ((not (equal old-definition actual-definition))
-                   (setq warning-count (1+ warning-count))
-                   (display-warning
-                    'el-patch
-                    (format (concat "Definition of `%S' differs from what "
-                                    "is assumed by its patch")
-                            name))))))
-             el-patch--patches)
-    (cond
-     ((zerop patch-count)
-      (user-error "No patches defined"))
-     ((zerop warning-count)
-      (message "All %d patches are valid" patch-count))
-     ((= patch-count warning-count)
-      (message "All %d patches are invalid" patch-count))
-     (t
-      (message "%d patches are valid, %d patches are invalid"
-               (- patch-count warning-count) warning-count)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Viewing patches
