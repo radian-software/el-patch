@@ -322,12 +322,13 @@ actual and expected original definitions."
                   ((not actual-definition)
                    (display-warning
                     'el-patch
-                    "Could not find definition of `%S'" name))
+                    (format "Could not find definition of `%S'" name)))
                   ((not (equal old-definition actual-definition))
                    (display-warning
                     'el-patch
-                    (concat "Definition of `%S' differs from what "
-                            "is assumed by its patch"))))))
+                    (format (concat "Definition of `%S' differs from what "
+                                    "is assumed by its patch")
+                            name))))))
              el-patch--patches)
     (unless any-patches
       (user-error "No patches defined"))))
