@@ -142,7 +142,8 @@ bindings, which maps symbols to their bindings."
                  (error "not enough arguments (%d) for `el-patch-let'"
                         (1- (length form))))
                 ((>= (length form) 4)
-                 (error "too many arguments (%d) for `el-patch-let'"))
+                 (error "too many arguments (%d) for `el-patch-let'"
+                        (1- (length form))))
                 ((not (listp bindings))
                  (error "non-list (%s) as first argument for `el-patch-let'"
                         bindings)))
@@ -275,23 +276,22 @@ further by el-patch."
 if such a definition cannot be found. (That would happen if the
 definition were generated dynamically, or the function is defined
 in the C code.)"
-  (let* ((buffer-point (condition-case nil
-                           (save-excursion
-                             ;; This horrifying bit of hackery
-                             ;; prevents `find-function-noselect' from
-                             ;; returning an existing buffer, so that
-                             ;; later on when we jump to the
-                             ;; definition, we don't temporarily
-                             ;; scroll the window if the definition
-                             ;; happens to be in the *current* buffer.
-                             (advice-add #'get-file-buffer :override
-                                         #'ignore)
-                             (find-function-noselect name 'lisp-only)
-                             (advice-remove #'get-file-buffer #'ignore))
+  (let* ((buffer-point (ignore-errors
                          ;; Just in case we get an error because the
                          ;; function is defined in the C code, we
                          ;; ignore it and return nil.
-                         ((error nil))))
+                         (save-excursion
+                           ;; This horrifying bit of hackery
+                           ;; prevents `find-function-noselect' from
+                           ;; returning an existing buffer, so that
+                           ;; later on when we jump to the
+                           ;; definition, we don't temporarily
+                           ;; scroll the window if the definition
+                           ;; happens to be in the *current* buffer.
+                           (advice-add #'get-file-buffer :override
+                                       #'ignore)
+                           (find-function-noselect name 'lisp-only)
+                           (advice-remove #'get-file-buffer #'ignore))))
          (defun-buffer (car buffer-point))
          (defun-point (cdr buffer-point)))
     (and defun-buffer
@@ -315,9 +315,7 @@ actual and expected original definitions."
     (maphash (lambda (name patch-definition)
                (setq any-patches t)
                (let ((old-definition (el-patch--resolve-definition
-                                      (el-patch--convert-patch-definition
-                                       patch-definition)
-                                      nil))
+                                      patch-definition nil))
                      (actual-definition (el-patch--find-function name)))
                  (cond
                   ((not actual-definition)
@@ -343,7 +341,8 @@ patch definition, a list beginning with `defun', `defmacro',
 etc."
   (let ((options nil))
     (maphash (lambda (name patch-definition)
-               (push (symbol-name name) options)))
+               (push (symbol-name name) options))
+             el-patch--patches)
     (unless options
       (user-error "No patches defined"))
     (gethash (intern (completing-read
@@ -385,10 +384,10 @@ returned by `el-patch--select-patch'."
 patch's original function definition in Ediff. PATCH-DEFINITION
 is as returned by `el-patch--select-patch'."
   (interactive (el-patch--select-patch))
-  (let ((name (cadr patch-definition))
-        (actual-definition (el-patch--find-function name))
-        (expected-definition (el-patch--resolve-definition
-                              patch-definition nil)))
+  (let* ((name (cadr patch-definition))
+         (actual-definition (el-patch--find-function name))
+         (expected-definition (el-patch--resolve-definition
+                               patch-definition nil)))
     (when (equal actual-definition expected-definition)
       (message "No conflict"))
     (el-patch--ediff-forms
