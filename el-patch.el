@@ -189,14 +189,14 @@ updating `el-patch--patches'."
 (defmacro el-patch-defun (&rest args)
   "Patch a function. The ARGS are the same as for `defun'."
   (declare (indent defun))
-  `(el-patch--definition ,(cons 'defun args)))
+  `(el-patch--definition ',(cons 'defun args)))
 
 ;;;###autoload
 (defmacro el-patch-defmacro (&rest args)
   "Patch a macro called NAME. The rest of the ARGS are the same
 as in `defmacro'."
   (declare (indent defun))
-  `(el-patch--definition ,(cons 'defmacro args)))
+  `(el-patch--definition ',(cons 'defmacro args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Patch directives
