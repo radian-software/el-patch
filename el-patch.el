@@ -395,4 +395,6 @@ is as returned by `el-patch--select-patch'."
      "*el-patch actual*" actual-definition
      "*el-patch expected*" expected-definition)))
 
+(provide 'el-patch)
+
 ;;; el-patch.el ends here
