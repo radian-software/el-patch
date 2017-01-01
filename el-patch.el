@@ -367,7 +367,7 @@ etc."
 
 (defun el-patch--ediff-forms (name1 form1 name2 form2)
   "Obtains empty buffers named NAME1 and NAME2, pretty-prints
-FORM1 and FORM2 into them respectively, and run Ediff on the two
+FORM1 and FORM2 into them respectively, and runs Ediff on the two
 buffers wordwise."
   (let ((min1) (max1) (min2) (max2))
     (with-current-buffer (get-buffer-create name1)
