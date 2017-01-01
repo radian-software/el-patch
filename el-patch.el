@@ -22,10 +22,10 @@
 ;;;; Internal variables
 
 (defvar el-patch--patches (make-hash-table :test 'equal)
-  "Hash table of patches that have been defined. The keys are
-symbols that are function names. The values are patch
-definitions, which are lists beginning with `defun', `defmacro',
-etc.")
+  "Hash table of patches that have been defined.
+The keys are symbols that are function names. The values are
+patch definitions, which are lists beginning with `defun',
+`defmacro', etc.")
 
 (defvar el-patch--not-present 'key-is-not-present-in-hash-table
   "Value used as a default argument to `gethash'.")
@@ -34,10 +34,11 @@ etc.")
 ;;;; Resolving patches
 
 (defmacro el-patch--with-puthash (table kvs &rest body)
-  "Binds each of the KVS (lists whose first element is the key
-and whose second element is the value) in the hash TABLE,
-evaluates BODY, then restores the original state of TABLE. Return
-value is the result of evaluating the last form in BODY."
+  "Bind variables in hash TABLE according to KVS then eval BODY.
+Each of the KVS is a list whose first element is the key and
+whose second element is the value. After BODY is evaluated, the
+original state of TABLE is restored. Return value is the result
+of evaluating the last form in BODY."
   (declare (indent 2))
   `(let* ((table ,table)
           (kvs ,kvs)
@@ -60,11 +61,12 @@ value is the result of evaluating the last form in BODY."
            (puthash (car kv) (cadr kv) table))))))
 
 (defun el-patch--resolve (form new &optional table)
-  "Resolves a patch FORM, returning a list of forms to be spliced
-into the surrounding s-expression. Resolves in favor of the
-original version if NEW is nil; otherwise resolves in favor of
-the new version. TABLE is a hash table of `el-patch-let'
-bindings, which maps symbols to their bindings."
+  "Resolve a patch FORM.
+Return a list of forms to be spliced into the surrounding
+s-expression. Resolve in favor of the original version if NEW is
+nil; otherwise resolve in favor of the new version. TABLE is a
+hash table of `el-patch-let' bindings, which maps symbols to
+their bindings."
   (let ((table (or table (make-hash-table :test 'equal))))
     (if (listp form)
         (let* ((directive (nth 0 form))
@@ -80,17 +82,17 @@ bindings, which maps symbols to their bindings."
           (pcase this-directive
             ((quote el-patch-add)
              (when (<= (length form) 1)
-               (error "not enough arguments (%d) for `%s'"
+               (error "Not enough arguments (%d) for `%s'"
                       (1- (length form)) directive))
              (when this-new
                (cl-mapcan resolve (cdr form))))
             ((quote el-patch-swap)
              (cond
               ((<= (length form) 2)
-               (error "not enough arguments (%d) for `el-patch-swap'"
+               (error "Not enough arguments (%d) for `el-patch-swap'"
                       (1- (length form))))
               ((>= (length form) 4)
-               (error "too many arguments (%d) in for `el-patch-swap'"
+               (error "Too many arguments (%d) in for `el-patch-swap'"
                       (1- (length form)))))
              (funcall resolve
                       (if this-new
@@ -106,30 +108,30 @@ bindings, which maps symbols to their bindings."
                    (body (car (last form))))
                (cond
                 ((<= (length form) 1)
-                 (error "not enough arguments (%d) for `%s'"
+                 (error "Not enough arguments (%d) for `%s'"
                         (1- (length form)) directive))
                 ((>= (length form) 5)
-                 (error "too many arguments (%d) for `%s'"
+                 (error "Too many arguments (%d) for `%s'"
                         (1- (length form)) directive))
                 ((not (listp body))
-                 (error "non-list (%s) as last argument for `%s'"
+                 (error "Non-list (%s) as last argument for `%s'"
                         (car (last form)) directive))
                 ((and (>= (length form) 3)
                       (not (integerp triml)))
-                 (error "non-integer (%s) as first argument for `%s'"
+                 (error "Non-integer (%s) as first argument for `%s'"
                         (nth 1 form) directive))
                 ((and (>= (length form) 4)
                       (not (integerp trimr)))
-                 (error "non-integer (%s) as second argument for `%s'"
+                 (error "Non-integer (%s) as second argument for `%s'"
                         (nth 2 form) directive))
                 ((< triml 0)
-                 (error "left trim less than zero (%d) for `%s'"
+                 (error "Left trim less than zero (%d) for `%s'"
                         triml directive))
                 ((< trimr 0)
-                 (error "right trim less than zero (%d) for `%s'"
+                 (error "Right trim less than zero (%d) for `%s'"
                         trimr directive))
                 ((> (+ triml trimr) (length body))
-                 (error "combined trim (%d + %d) greater than body length (%d) for `%s'"
+                 (error "Combined trim (%d + %d) greater than body length (%d) for `%s'"
                         triml trimr (length body) directive)))
                (if new
                    (list (cl-mapcan resolve body))
@@ -139,18 +141,18 @@ bindings, which maps symbols to their bindings."
                    (body (nth 2 form)))
                (cond
                 ((<= (length form) 2)
-                 (error "not enough arguments (%d) for `el-patch-let'"
+                 (error "Not enough arguments (%d) for `el-patch-let'"
                         (1- (length form))))
                 ((>= (length form) 4)
-                 (error "too many arguments (%d) for `el-patch-let'"
+                 (error "Too many arguments (%d) for `el-patch-let'"
                         (1- (length form))))
                 ((not (listp bindings))
-                 (error "non-list (%s) as first argument for `el-patch-let'"
+                 (error "Non-list (%s) as first argument for `el-patch-let'"
                         bindings)))
                (el-patch--with-puthash table
                    (mapcar (lambda (kv)
                              (unless (symbolp (car kv))
-                               (error "non-symbol (%s) as binding for `el-patch-let'"
+                               (error "Non-symbol (%s) as binding for `el-patch-let'"
                                       (car kv)))
                              (list (car kv)
                                    (funcall resolve (cadr kv))))
@@ -158,7 +160,7 @@ bindings, which maps symbols to their bindings."
                  (funcall resolve body))))
             ((quote el-patch-literal)
              (when (<= (length form) 1)
-               (error "not enough arguments (%d) for `el-patch-literal'"
+               (error "Not enough arguments (%d) for `el-patch-literal'"
                       (1- (length form))))
              (cdr form))
             (_ (list (cl-mapcan resolve form)))))
@@ -166,10 +168,11 @@ bindings, which maps symbols to their bindings."
           (list form)))))
 
 (defun el-patch--resolve-definition (patch-definition new)
-  "Resolves a patch DEFINITION, a list starting with `defun',
-`defmacro', etc., returning a list of the same format. Resolves
-in favor of the original version if NEW is nil; otherwise
-resolves in favor of the new version."
+  "Resolve a PATCH-DEFINITION.
+PATCH-DEFINITION is a list starting with `defun', `defmacro',
+etc. Return a list of the same format. Resolve in favor of the
+original version if NEW is nil; otherwise resolve in favor of the
+new version."
   (cl-mapcan (lambda (form)
                (el-patch--resolve form new))
              patch-definition))
@@ -178,21 +181,24 @@ resolves in favor of the new version."
 ;;;; Applying patches
 
 (defun el-patch--advice-name (function-name)
-  "Given a FUNCTION-NAME, returns the name of the `:override'
-advice el-patch uses to apply patches to it."
+  "Translate a FUNCTION-NAME into an advice name.
+Return a symbol naming the `:override' advice el-patch will use
+to patch a function called FUNCTION-NAME."
   (intern (format "el-patch--advice--%S" function-name)))
 
 (defun el-patch--function-to-advice (definition)
-  "Given a DEFINITION, a list starting with `defun', `defmacro',
-etc., returns a new definition, a list starting with `defun',
-that can be used to define an `:override' advice."
+  "Turn a function DEFINITION into an advice definition.
+DEFINITION is a list starting with `defun', `defmacro', etc.
+Return a new definition, a list starting with `defun', that can
+be used to define an `:override' advice."
   `(defun ,(el-patch--advice-name (cadr definition))
        ,@(cddr definition)))
 
 (defun el-patch--definition (patch-definition)
-  "Activates a PATCH-DEFINITION, a list starting with `defun',
-`defmacro', etc. Updates `el-patch--patches', creates the advice,
-and activates it."
+  "Activate a PATCH-DEFINITION.
+PATCH-DEFINITION is a list starting with `defun', `defmacro',
+etc. Update `el-patch--patches', create the advice, and activate
+it."
   (let* ((function-name (cadr patch-definition))
          (advice-name (el-patch--advice-name function-name)))
     (puthash function-name patch-definition el-patch--patches)
@@ -208,8 +214,7 @@ and activates it."
 
 ;;;###autoload
 (defmacro el-patch-defmacro (&rest args)
-  "Patch a macro called NAME. The rest of the ARGS are the same
-as in `defmacro'."
+  "Patch a macro. The ARGS are the same as for `defmacro'."
   (declare (indent defun))
   `(el-patch--definition ',(cons 'defmacro args)))
 
@@ -218,68 +223,76 @@ as in `defmacro'."
 
 ;;;###autoload
 (defmacro el-patch-add (&rest args)
-  "Patch directive. In the original definition, the ARGS and
-their containing form are removed. In the new definition, the
-ARGS are spliced into the containing s-expression."
+  "Patch directive for inserting forms.
+In the original definition, the ARGS and their containing form
+are removed. In the new definition, the ARGS are spliced into the
+containing s-expression."
   (declare (indent 0))
   `(error "Can't use `el-patch-add' outside of an `el-patch'"))
 
 ;;;###autoload
 (defmacro el-patch-remove (&rest args)
-  "Patch directive. In the original definition, the ARGS are
-spliced into the containing s-expression. In the new definition,
-the ARGS and their containing form are removed."
+  "Patch directive for removing forms.
+In the original definition, the ARGS are spliced into the
+containing s-expression. In the new definition, the ARGS and
+their containing form are removed."
   (declare (indent 0))
   `(error "Can't use `el-patch-remove' outside of an `el-patch'"))
 
 ;;;###autoload
 (defmacro el-patch-swap (old new)
-  "Patch directive. In the original definition, OLD is spliced
-into the containing s-expression. In the new definition, NEW is
-spliced instead."
+  "Patch directive for swapping forms.
+In the original definition, OLD is spliced into the containing
+s-expression. In the new definition, NEW is spliced instead."
   (declare (indent 0))
   `(error "Can't use `el-patch-swap' outside of an `el-patch'"))
 
 ;;;###autoload
 (defmacro el-patch-wrap (&optional triml trimr args)
-  "Patch directive. In the original definition, the ARGS are
-spliced into the containing s-expression. If TRIML is provided,
-it is an integer and the first TRIML of the ARGS are removed
-first. If TRIMR is provided, it is an integer and the last TRIMR
+  "Patch directive for wrapping forms.
+TRIML and TRIMR are optional arguments. If only one is provided,
+it is assumed to be TRIML. ARGS is required, and it must be a
+list.
+
+In the original definition, the ARGS are spliced into the
+containing s-expression. If TRIML is provided, the first TRIML of
+the ARGS are removed first. If TRIMR is provided, the last TRIMR
 are also removed. In the new definition, the ARGS and their
-containing form are spliced into the containing s-expression (but
-the symbol `el-patch-wrap' is removed, as are TRIML and TRIMR if
-they are provided). ARGS is a required argument."
+containing list are spliced into the containing s-expression."
   (declare (indent defun))
   `(error "Can't use `el-patch-wrap' outside of an `el-patch'"))
 
 ;;;###autoload
 (defmacro el-patch-splice (&optional triml trimr args)
-  "Patch directive. In the original definition, the ARGS and
-their containing form are spliced into the containing
-s-expression (but the symbol `el-patch-splice' is removed, as are
-TRIML and TRIMR if they are provided). In the new definition, the
-ARGS are spliced into the containing s-expression. If TRIML is
-provided, it is an integer and the first TRIML of the ARGS are
-removed first. If TRIMR is provided, it is an integer and the
-last TRIMR are also removed. ARGS is a required argument."
+  "Patch directive for splicing forms.
+TRIML and TRIMR are optional arguments. If only one is provided,
+it is assumed to be TRIML. ARGS is required, and it must be a
+list.
+
+In the original definition, the ARGS and their containing list
+are spliced into the containing s-expression. In the new
+definition, the ARGS are spliced into the containing
+s-expression. If TRIML is provided, the first TRIML of the ARGS
+are removed first. If TRIMR is provided, the last TRIMR are also
+removed."
   (declare (indent defun))
   `(error "Can't use `el-patch-splice' outside of an `el-patch'"))
 
 ;;;###autoload
 (defmacro el-patch-let (varlist arg)
-  "Patch directive. Creates local bindings according to VARLIST,
-then resolves to ARG in both the original and new definitions.
-You may bind symbols that are also patch directives, but the
-bindings will not have effect if the symbols are used at the
-beginning of a list (they will act as patch directives)."
+  "Patch directive for creating local el-patch bindings.
+Creates local bindings according to VARLIST, then resolves to ARG
+in both the original and new definitions. You may bind symbols
+that are also patch directives, but the bindings will not have
+effect if the symbols are used at the beginning of a list (they
+will act as patch directives)."
   (declare (indent 1))
   `(error "Can't use `el-patch-let' outside of an `el-patch'"))
 
 ;;;###autoload
 (defmacro el-patch-literal (arg)
-  "Patch directive. Resolves to ARG, which is not processed
-further by el-patch."
+  "Patch directive for treating patch directives literally.
+Resolves to ARG, which is not processed further by el-patch."
   (declare (indent 0))
   `(error "Can't use `el-patch-literal' outside of an `el-patch'"))
 
@@ -287,10 +300,10 @@ further by el-patch."
 ;;;; Validating patches
 
 (defun el-patch--find-function (name)
-  "Returns the Lisp form that defines the function NAME, or nil
-if such a definition cannot be found. (That would happen if the
-definition were generated dynamically, or the function is defined
-in the C code.)"
+  "Return the Lisp form that defines the function NAME.
+Return nil if such a definition cannot be found. (That would
+happen if the definition were generated dynamically, or the
+function is defined in the C code.)"
   (let* ((buffer-point (ignore-errors
                          ;; Just in case we get an error because the
                          ;; function is defined in the C code, we
@@ -319,13 +332,13 @@ in the C code.)"
 
 ;;;###autoload
 (defun el-patch-validate-patches ()
-  "Validate all the patches that have been defined in the current
-Emacs session. This means el-patch will attempt to find the
-original definition for each patched function, and verify that it
-is the same as the original function assumed by the patch. A
-warning will be signaled if the original definition for a patched
-function cannot be found, or if there is a different between the
-actual and expected original definitions."
+  "Validate all currently defined patches.
+This means el-patch will attempt to find the original definition
+for each patched function, and verify that it is the same as the
+original function assumed by the patch. A warning will be
+signaled if the original definition for a patched function cannot
+be found, or if there is a different between the actual and
+expected original definitions."
   (interactive)
   (let ((patch-count 0)
         (warning-count 0))
@@ -363,10 +376,9 @@ actual and expected original definitions."
 ;;;; Viewing patches
 
 (defun el-patch--select-patch ()
-  "Use `completing-read' to select a function that has been
-patched using el-patch in the current Emacs session. Returns the
-patch definition, a list beginning with `defun', `defmacro',
-etc."
+  "Use `completing-read' to select a patched function.
+Return the patch definition, a list beginning with `defun',
+`defmacro', etc."
   (let ((options nil))
     (maphash (lambda (name patch-definition)
                (push (symbol-name name) options))
@@ -381,8 +393,9 @@ etc."
              el-patch--patches)))
 
 (defun el-patch--ediff-forms (name1 form1 name2 form2)
-  "Obtains empty buffers named NAME1 and NAME2, pretty-prints
-FORM1 and FORM2 into them respectively, and runs Ediff on the two
+  "Ediff two forms.
+Obtain empty buffers named NAME1 and NAME2, pretty-print FORM1
+and FORM2 into them respectively, and run Ediff on the two
 buffers wordwise."
   (let ((min1) (max1) (min2) (max2))
     (with-current-buffer (get-buffer-create name1)
@@ -395,6 +408,8 @@ buffers wordwise."
       (pp form2 (current-buffer))
       (setq min2 (point-min)
             max2 (point-max)))
+    ;; Ugly hack because Ediff is missing an `ediff-buffers-wordwise'
+    ;; function.
     (eval-and-compile
       (require 'ediff))
     (ediff-regions-internal
@@ -404,8 +419,8 @@ buffers wordwise."
 
 ;;;###autoload
 (defun el-patch-ediff-patch (patch-definition)
-  "Show the patch for a function in Ediff. PATCH-DEFINITION is as
-returned by `el-patch--select-patch'."
+  "Show the patch for a function in Ediff.
+PATCH-DEFINITION is as returned by `el-patch--select-patch'."
   (interactive (list (el-patch--select-patch)))
   (let ((old-definition (el-patch--resolve-definition
                          patch-definition nil))
@@ -419,9 +434,10 @@ returned by `el-patch--select-patch'."
 
 ;;;###autoload
 (defun el-patch-ediff-conflict (patch-definition)
-  "Show the conflict between the expected and actual values of a
-patch's original function definition in Ediff. PATCH-DEFINITION
-is as returned by `el-patch--select-patch'."
+  "Show a patch conflict in Ediff.
+This is a diff between the expected and actual values of a
+patch's original function definition. PATCH-DEFINITION is as
+returned by `el-patch--select-patch'."
   (interactive (list (el-patch--select-patch)))
   (let* ((name (cadr patch-definition))
          (actual-definition (el-patch--find-function name))
@@ -438,8 +454,8 @@ is as returned by `el-patch--select-patch'."
 
 ;;;###autoload
 (defun el-patch-unpatch (function-name)
-  "Remove the patch for FUNCTION-NAME, restoring its original
-functionality."
+  "Remove the patch for FUNCTION-NAME.
+This restores the original functionality of FUNCTION-NAME."
   (interactive (list (cadr (el-patch--select-patch))))
   (let ((advice-name (el-patch--advice-name function-name)))
     (advice-remove function-name advice-name)
