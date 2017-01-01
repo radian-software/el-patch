@@ -212,8 +212,8 @@ function is defined in the C code.)"
              (read defun-buffer))))))
 
 ;;;###autoload
-(defun el-patch-validate (name)
-  "Validate the patch for the function NAME.
+(defun el-patch-validate (patch-definition &optional nomsg)
+  "Validate the patch given by PATCH-DEFINITION.
 This means el-patch will attempt to find the original definition
 for the function, and verify that it is the same as the original
 function assumed by the patch. A warning will be signaled if the
@@ -221,11 +221,16 @@ original definition for a patched function cannot be found, or if
 there is a difference between the actual and expected original
 definitions.
 
+PATCH-DEFINITION is a list beginning with `defun', `defmacro',
+etc.
+
 Returns nil if the patch is not valid, and otherwise returns t.
+If NOMSG is non-nil, does not signal a message when the patch is
+valid.
 
 See also `el-patch-validate-all'."
-  (interactive (list (cadr (el-patch--select-patch))))
-  (let* ((patch-definition (gethash name el-patch--patches))
+  (interactive (list (el-patch--select-patch)))
+  (let* ((name (cadr patch-definition))
          (old-definition (el-patch--resolve-definition
                           patch-definition nil))
          (actual-definition (el-patch--find-function name)))
@@ -242,7 +247,11 @@ See also `el-patch-validate-all'."
        (format (concat "Definition of `%S' differs from what "
                        "is assumed by its patch")
                name)
-       nil)))))
+       nil))
+     (t
+      (unless nomsg
+        (message "Patch is valid"))
+      t))))
 
 ;;;###autoload
 (defun el-patch-validate-all ()
@@ -253,7 +262,7 @@ See `el-patch-validate'."
         (warning-count 0))
     (maphash (lambda (name patch-definition)
                (setq patch-count (1+ patch-count))
-               (unless (el-patch-validate name)
+               (unless (el-patch-validate patch-definition 'nomsg)
                  (setq warning-count (1+ warning-count))))
              el-patch--patches)
     (cond
@@ -281,11 +290,16 @@ by calling the function `el-patch-disable-validation-during-init'
 in your init-file.")
 
 (defun el-patch--reenable-validation-after-init ()
+  "Enable `el-patch-validation'.
+Also remove this function from `after-init-hook'."
   (setq el-patch-validation t)
   (remove-hook 'after-init-hook #'el-patch--reenable-validation-after-init))
 
 ;;;###autoload
 (defun el-patch-disable-validation-during-init ()
+  "Disable `el-patch-validation' temporarily during Emacs startup.
+Precisely, set it to nil and then set it to t when
+`after-init-hook' runs."
   (setq el-patch-validation nil)
   (add-hook 'after-init-hook #'el-patch--reenable-validation-after-init))
 
@@ -314,7 +328,7 @@ it."
   (let* ((function-name (cadr patch-definition))
          (advice-name (el-patch--advice-name function-name)))
     (when (or (not el-patch-validation)
-              (el-patch-validate function-name))
+              (el-patch-validate patch-definition 'nomsg))
       (puthash function-name patch-definition el-patch--patches)
       (eval (el-patch--function-to-advice
              (el-patch--resolve-definition patch-definition t)))
