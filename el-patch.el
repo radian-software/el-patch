@@ -226,28 +226,28 @@ spliced instead."
   `(error "Can't use `el-patch-swap' outside of an `el-patch'"))
 
 ;;;###autoload
-(defmacro el-patch-wrap (&optional triml &optional trimr args)
+(defmacro el-patch-wrap (&optional triml trimr args)
   "Patch directive. In the original definition, the ARGS are
-spliced into the containing s-expression. If TRIML is an integer,
-the first TRIML of the ARGS are removed first. If TRIMR is an
-integer, the last TRIMR are also removed. If TRIML or TRIMR are
-not integers, they are interpreted as part of ARGS. In the new
-definition, the ARGS and their containing form are spliced into
-the containing s-expression (but the symbol `el-patch-wrap' is
-removed)."
+spliced into the containing s-expression. If TRIML is provided,
+it is an integer and the first TRIML of the ARGS are removed
+first. If TRIMR is provided, it is an integer and the last TRIMR
+are also removed. In the new definition, the ARGS and their
+containing form are spliced into the containing s-expression (but
+the symbol `el-patch-wrap' is removed, as are TRIML and TRIMR if
+they are provided). ARGS is a required argument."
   (declare (indent defun))
   `(error "Can't use `el-patch-wrap' outside of an `el-patch'"))
 
 ;;;###autoload
-(defmacro el-patch-splice (&optional triml &optional trimr args)
+(defmacro el-patch-splice (&optional triml trimr args)
   "Patch directive. In the original definition, the ARGS and
 their containing form are spliced into the containing
-s-expression (but the symbol `el-patch-splice' is removed). In
-the new definition, the ARGS are spliced into the containing
-s-expression. If TRIML is an integer, the first TRIML of the ARGS
-are removed first. If TRIMR is an integer, the last TRIMR are
-also removed. If TRIML or TRIMR are not integers, they are
-interpreted as part of ARGS."
+s-expression (but the symbol `el-patch-splice' is removed, as are
+TRIML and TRIMR if they are provided). In the new definition, the
+ARGS are spliced into the containing s-expression. If TRIML is
+provided, it is an integer and the first TRIML of the ARGS are
+removed first. If TRIMR is provided, it is an integer and the
+last TRIMR are also removed. ARGS is a required argument."
   (declare (indent defun))
   `(error "Can't use `el-patch-splice' outside of an `el-patch'"))
 
