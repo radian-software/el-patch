@@ -177,13 +177,28 @@ resolves in favor of the new version."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Applying patches
 
+(defun el-patch--advice-name (function-name)
+  "Given a FUNCTION-NAME, returns the name of the `:override'
+advice el-patch uses to apply patches to it."
+  (intern (format "el-patch--advice--%S" function-name)))
+
+(defun el-patch--function-to-advice (definition)
+  "Given a DEFINITION, a list starting with `defun', `defmacro',
+etc., returns a new definition, a list starting with `defun',
+that can be used to define an `:override' advice."
+  `(defun ,(el-patch--advice-name (cadr definition))
+       ,@(cddr definition)))
+
 (defun el-patch--definition (patch-definition)
   "Activates a PATCH-DEFINITION, a list starting with `defun',
-`defmacro', etc., installing the new function definition and
-updating `el-patch--patches'."
-  (let ((name (cadr patch-definition)))
-    (puthash name patch-definition el-patch--patches)
-    (eval (el-patch--resolve-definition patch-definition t))))
+`defmacro', etc. Updates `el-patch--patches', creates the advice,
+and activates it."
+  (let* ((function-name (cadr patch-definition))
+         (advice-name (el-patch--advice-name function-name)))
+    (puthash function-name patch-definition el-patch--patches)
+    (eval (el-patch--function-to-advice
+           (el-patch--resolve-definition patch-definition t)))
+    (advice-add function-name :override advice-name)))
 
 ;;;###autoload
 (defmacro el-patch-defun (&rest args)
@@ -417,6 +432,19 @@ is as returned by `el-patch--select-patch'."
      "*el-patch expected*" expected-definition)
     (when (equal actual-definition expected-definition)
       (message "No conflict"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Removing patches
+
+;;;###autoload
+(defun el-patch-unpatch (function-name)
+  "Remove the patch for FUNCTION-NAME, restoring its original
+functionality."
+  (interactive (list (cadr (el-patch--select-patch))))
+  (let ((advice-name (el-patch--advice-name function-name)))
+    (advice-remove function-name advice-name)
+    (fmakunbound advice-name)
+    (remhash function-name el-patch--patches)))
 
 (provide 'el-patch)
 
