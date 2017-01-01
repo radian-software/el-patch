@@ -369,7 +369,7 @@ buffers."
 (defun el-patch-ediff-patch (patch-definition)
   "Show the patch for a function in Ediff. PATCH-DEFINITION is as
 returned by `el-patch--select-patch'."
-  (interactive (el-patch--select-patch))
+  (interactive (list (el-patch--select-patch)))
   (let ((old-definition (el-patch--resolve-definition
                          patch-definition nil))
         (new-definition (el-patch--resolve-definition
@@ -383,7 +383,7 @@ returned by `el-patch--select-patch'."
   "Show the conflict between the expected and actual values of a
 patch's original function definition in Ediff. PATCH-DEFINITION
 is as returned by `el-patch--select-patch'."
-  (interactive (el-patch--select-patch))
+  (interactive (list (el-patch--select-patch)))
   (let* ((name (cadr patch-definition))
          (actual-definition (el-patch--find-function name))
          (expected-definition (el-patch--resolve-definition
