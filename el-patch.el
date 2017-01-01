@@ -387,7 +387,9 @@ returned by `el-patch--select-patch'."
                          patch-definition t)))
     (el-patch--ediff-forms
      "*el-patch original*" old-definition
-     "*el-patch patched*" new-definition)))
+     "*el-patch patched*" new-definition)
+    (when (equal old-definition new-definition)
+      (message "No patch"))))
 
 ;;;###autoload
 (defun el-patch-ediff-conflict (patch-definition)
