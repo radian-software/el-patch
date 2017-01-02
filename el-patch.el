@@ -320,6 +320,12 @@ be used to define an `:override' advice."
   `(defun ,(el-patch--advice-name (cadr definition))
        ,@(cddr definition)))
 
+;;;###autoload
+(defun el-patch-unloaded-function (&rest args)
+  "This function has not been loaded yet, only its patch.
+See the function's `:override' advice for information about its
+behavior.")
+
 (defun el-patch--definition (patch-definition)
   "Activate a PATCH-DEFINITION.
 PATCH-DEFINITION is a list starting with `defun', `defmacro',
@@ -332,6 +338,8 @@ it."
       (puthash function-name patch-definition el-patch--patches)
       (eval (el-patch--function-to-advice
              (el-patch--resolve-definition patch-definition t)))
+      (unless (fboundp function-name)
+        (fset function-name #'el-patch-unloaded-function))
       (advice-add function-name :override advice-name))))
 
 ;;;###autoload
