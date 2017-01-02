@@ -13,6 +13,9 @@
 
 ;;; Code:
 
+;; To see the outline of this file, run M-x occur with a query of four
+;; semicolons followed by a space.
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Libraries
 
@@ -71,7 +74,8 @@ Return a list of forms to be spliced into the surrounding
 s-expression. Resolve in favor of the original version if NEW is
 nil; otherwise resolve in favor of the new version. TABLE is a
 hash table of `el-patch-let' bindings, which maps symbols to
-their bindings."
+their bindings. Set `el-patch--feature' to the last value
+specified in a `el-patch-feature' directive."
   (let ((table (or table (make-hash-table :test 'equal))))
     (if (listp form)
         (let* ((directive (nth 0 form))
@@ -186,7 +190,8 @@ their bindings."
 PATCH-DEFINITION is a list starting with `defun', `defmacro',
 etc. Return a list of the same format. Resolve in favor of the
 original version if NEW is nil; otherwise resolve in favor of the
-new version."
+new version. Set `el-patch--feature' to the last value specified
+in a `el-patch-feature' directive."
   (cl-mapcan (lambda (form)
                (el-patch--resolve form new))
              patch-definition))
@@ -198,50 +203,37 @@ new version."
   "Return the Lisp form that defines the function NAME.
 Return nil if such a definition cannot be found. (That would
 happen if the definition were generated dynamically, or the
-function is defined in the C code.)"
-  (if (or (fboundp name)
-          el-patch--feature)
-      (progn
-        (when el-patch--feature
-          (require el-patch--feature))
-        (if (fboundp name)
-            (let* ((buffer-point (ignore-errors
-                                   ;; Just in case we get an error because the
-                                   ;; function is defined in the C code, we
-                                   ;; ignore it and return nil.
-                                   (save-excursion
-                                     ;; This horrifying bit of hackery
-                                     ;; prevents `find-function-noselect' from
-                                     ;; returning an existing buffer, so that
-                                     ;; later on when we jump to the
-                                     ;; definition, we don't temporarily
-                                     ;; scroll the window if the definition
-                                     ;; happens to be in the *current* buffer.
-                                     (prog2
-                                         (advice-add #'get-file-buffer :override
-                                                     #'ignore)
-                                         (find-function-noselect name 'lisp-only)
-                                       (advice-remove #'get-file-buffer #'ignore)))))
-                   (defun-buffer (car buffer-point))
-                   (defun-point (cdr buffer-point)))
-              (and defun-buffer
-                   defun-point
-                   (with-current-buffer defun-buffer
-                     (save-excursion
-                       (goto-char defun-point)
-                       (read defun-buffer)))))
-          (ignore
-           (display-warning
-            'el-patch
-            (format (concat "`%S' is not defined, are you sure it is provided "
-                            "by feature `%S'?")
-                    name el-patch--feature)))))
-    (ignore
-     (display-warning
-      'el-patch
-      (format (concat "`%S' is not defined, you must specify a feature "
-                      "in the patch")
-              name)))))
+function is defined in the C code, or the function is not
+autoloaded and not provided by `el-patch--feature'.) If
+`el-patch--feature' is non-nil, `require' that feature first."
+  (when el-patch--feature
+    (require el-patch--feature))
+  (when (fboundp name)
+    (let* ((buffer-point (ignore-errors
+                           ;; Just in case we get an error because the
+                           ;; function is defined in the C code, we
+                           ;; ignore it and return nil.
+                           (save-excursion
+                             ;; This horrifying bit of hackery
+                             ;; prevents `find-function-noselect' from
+                             ;; returning an existing buffer, so that
+                             ;; later on when we jump to the
+                             ;; definition, we don't temporarily
+                             ;; scroll the window if the definition
+                             ;; happens to be in the *current* buffer.
+                             (prog2
+                                 (advice-add #'get-file-buffer :override
+                                             #'ignore)
+                                 (find-function-noselect name 'lisp-only)
+                               (advice-remove #'get-file-buffer #'ignore)))))
+           (defun-buffer (car buffer-point))
+           (defun-point (cdr buffer-point)))
+      (and defun-buffer
+           defun-point
+           (with-current-buffer defun-buffer
+             (save-excursion
+               (goto-char defun-point)
+               (read defun-buffer)))))))
 
 ;;;###autoload
 (defun el-patch-validate (patch-definition &optional nomsg)
@@ -353,11 +345,29 @@ be used to define an `:override' advice."
   `(defun ,(el-patch--advice-name (cadr definition))
        ,@(cddr definition)))
 
-;;;###autoload
-(defun el-patch-unloaded-function (&rest args)
-  "This function has not been loaded yet, only its patch.
-See the function's `:override' advice for information about its
-behavior.")
+(defun el-patch--autoload-function (function-name feature)
+  (let ((recursive-autoload
+         (intern (format "el-patch--recursive-autoload--%S"
+                         function-name))))
+    `(defun ,function-name (&rest args)
+       ,(format "This function is a stub generated by el-patch. The patch for
+`%S' has been loaded (see the `:override' advice on this function),
+but the original definition of `%S', which is provided by feature `%S'
+has not yet been loaded.
+
+If you the `:override' advice and then call this function, it will
+load feature `%S' and then invoke the actual definition of `%S',
+just like an autoload."
+                function-name function-name feature feature function-name)
+       (if (boundp ',recursive-autoload)
+           (error "Autoload of `%S' failed to define `%S'"
+                  feature function-name)
+         (require ',feature)
+         (apply ',function-name args)))))
+
+(defun el-patch--stealthy-defun (function-name definition)
+  ;; FIXME should prevent `load-history' from being updated
+  (eval definition))
 
 (defun el-patch--definition (patch-definition)
   "Activate a PATCH-DEFINITION.
@@ -372,8 +382,16 @@ it."
       (setq el-patch--feature nil)
       (eval (el-patch--function-to-advice
              (el-patch--resolve-definition patch-definition t)))
-      (unless (fboundp function-name)
-        (fset function-name #'el-patch-unloaded-function))
+      ;; FIXME should not require `el-patch-feature' directive if the
+      ;; function is autoloaded
+      (unless (and (fboundp function-name)
+                   (not (autoloadp (symbol-function function-name))))
+        (unless el-patch--feature
+          (error "You must specify an `el-patch-feature' directive for `%S'"
+                 function-name))
+        (el-patch--stealthy-defun
+         function-name
+         (el-patch--autoload-function function-name el-patch--feature)))
       (advice-add function-name :override advice-name))))
 
 ;;;###autoload
