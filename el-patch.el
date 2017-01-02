@@ -346,6 +346,12 @@ it."
   (declare (indent defun))
   `(el-patch--definition ',(cons 'defmacro args)))
 
+;;;###autoload
+(defmacro el-patch-defsubst (&rest args)
+  "Patch an inline function. The ARGS are the same as for `defsubst'."
+  (declare (indent defun))
+  `(el-patch--definition ',(cons 'defsubst args)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Patch directives
 
