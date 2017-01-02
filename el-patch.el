@@ -246,8 +246,8 @@ See also `el-patch-validate-all'."
        'el-patch
        (format (concat "Definition of `%S' differs from what "
                        "is assumed by its patch")
-               name)
-       nil))
+               name))
+      nil)
      (t
       (unless nomsg
         (message "Patch is valid"))
