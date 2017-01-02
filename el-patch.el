@@ -30,6 +30,11 @@ patch definitions, which are lists beginning with `defun',
 (defvar el-patch--not-present 'key-is-not-present-in-hash-table
   "Value used as a default argument to `gethash'.")
 
+(defvar el-patch--feature nil
+  "Feature specified by the last feature directive processed.
+This is set to the argument of the last `el-patch-feature'
+directive processed by `el-patch--resolve'.")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Resolving patches
 
@@ -163,6 +168,15 @@ their bindings."
                (error "Not enough arguments (%d) for `el-patch-literal'"
                       (1- (length form))))
              (cdr form))
+            ((quote el-patch-feature)
+             (cond
+              ((<= (length form) 1)
+               (error "Not enough arguments (%d) for `el-patch-feature'"
+                      (1- (length form))))
+              ((>= (length form) 3)
+               (error "Too many arguments (%d) for `el-patch-feature'"
+                      (1- (length form)))))
+             (ignore (setq el-patch--feature (nth 1 form))))
             (_ (list (cl-mapcan resolve form)))))
       (or (gethash form table)
           (list form)))))
@@ -185,31 +199,49 @@ new version."
 Return nil if such a definition cannot be found. (That would
 happen if the definition were generated dynamically, or the
 function is defined in the C code.)"
-  (let* ((buffer-point (ignore-errors
-                         ;; Just in case we get an error because the
-                         ;; function is defined in the C code, we
-                         ;; ignore it and return nil.
-                         (save-excursion
-                           ;; This horrifying bit of hackery
-                           ;; prevents `find-function-noselect' from
-                           ;; returning an existing buffer, so that
-                           ;; later on when we jump to the
-                           ;; definition, we don't temporarily
-                           ;; scroll the window if the definition
-                           ;; happens to be in the *current* buffer.
-                           (prog2
-                               (advice-add #'get-file-buffer :override
-                                           #'ignore)
-                               (find-function-noselect name 'lisp-only)
-                             (advice-remove #'get-file-buffer #'ignore)))))
-         (defun-buffer (car buffer-point))
-         (defun-point (cdr buffer-point)))
-    (and defun-buffer
-         defun-point
-         (with-current-buffer defun-buffer
-           (save-excursion
-             (goto-char defun-point)
-             (read defun-buffer))))))
+  (if (or (fboundp name)
+          el-patch--feature)
+      (progn
+        (when el-patch--feature
+          (require el-patch--feature))
+        (if (fboundp name)
+            (let* ((buffer-point (ignore-errors
+                                   ;; Just in case we get an error because the
+                                   ;; function is defined in the C code, we
+                                   ;; ignore it and return nil.
+                                   (save-excursion
+                                     ;; This horrifying bit of hackery
+                                     ;; prevents `find-function-noselect' from
+                                     ;; returning an existing buffer, so that
+                                     ;; later on when we jump to the
+                                     ;; definition, we don't temporarily
+                                     ;; scroll the window if the definition
+                                     ;; happens to be in the *current* buffer.
+                                     (prog2
+                                         (advice-add #'get-file-buffer :override
+                                                     #'ignore)
+                                         (find-function-noselect name 'lisp-only)
+                                       (advice-remove #'get-file-buffer #'ignore)))))
+                   (defun-buffer (car buffer-point))
+                   (defun-point (cdr buffer-point)))
+              (and defun-buffer
+                   defun-point
+                   (with-current-buffer defun-buffer
+                     (save-excursion
+                       (goto-char defun-point)
+                       (read defun-buffer)))))
+          (ignore
+           (display-warning
+            'el-patch
+            (format (concat "`%S' is not defined, are you sure it is provided "
+                            "by feature `%S'?")
+                    name el-patch--feature)))))
+    (ignore
+     (display-warning
+      'el-patch
+      (format (concat "`%S' is not defined, you must specify a feature "
+                      "in the patch")
+              name)))))
 
 ;;;###autoload
 (defun el-patch-validate (patch-definition &optional nomsg)
@@ -230,9 +262,10 @@ valid.
 
 See also `el-patch-validate-all'."
   (interactive (list (el-patch--select-patch)))
+  (setq el-patch--feature nil)
   (let* ((name (cadr patch-definition))
-         (old-definition (el-patch--resolve-definition
-                          patch-definition nil))
+         (expected-definition (el-patch--resolve-definition
+                               patch-definition nil))
          (actual-definition (el-patch--find-function name)))
     (cond
      ((not actual-definition)
@@ -240,7 +273,7 @@ See also `el-patch-validate-all'."
        'el-patch
        (format "Could not find definition of `%S'" name))
       nil)
-     ((not (equal old-definition actual-definition))
+     ((not (equal expected-definition actual-definition))
 
       (display-warning
        'el-patch
@@ -336,6 +369,7 @@ it."
     (when (or (not el-patch-validation)
               (el-patch-validate patch-definition 'nomsg))
       (puthash function-name patch-definition el-patch--patches)
+      (setq el-patch--feature nil)
       (eval (el-patch--function-to-advice
              (el-patch--resolve-definition patch-definition t)))
       (unless (fboundp function-name)
@@ -438,6 +472,15 @@ Resolves to ARG, which is not processed further by el-patch."
   (declare (indent 0))
   `(error "Can't use `el-patch-literal' outside of an `el-patch'"))
 
+;;;###autoload
+(defmacro el-patch-feature (feature)
+  "Patch directive for declaring which FEATURE loads a function.
+If you patch a function that is not autoloaded, you need to
+include this directive somewhere in the body of the patch
+definition. It resolves to nothing in both the original and new
+definitions."
+  (declare (indent 0)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Viewing patches
 
@@ -505,10 +548,11 @@ This is a diff between the expected and actual values of a
 patch's original function definition. PATCH-DEFINITION is as
 returned by `el-patch--select-patch'."
   (interactive (list (el-patch--select-patch)))
+  (setq el-patch--feature nil)
   (let* ((name (cadr patch-definition))
-         (actual-definition (el-patch--find-function name))
          (expected-definition (el-patch--resolve-definition
-                               patch-definition nil)))
+                               patch-definition nil))
+         (actual-definition (el-patch--find-function name)))
     (el-patch--ediff-forms
      "*el-patch actual*" actual-definition
      "*el-patch expected*" expected-definition)
