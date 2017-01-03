@@ -9,8 +9,7 @@ Using `quelpa-use-package`:
     (use-package el-patch
       :ensure t
       :demand t
-      :quelpa (el-patch :fetcher github :repo "raxod502/el-patch")
-      :config (el-patch-disable-validation-during-init))
+      :quelpa (el-patch :fetcher github :repo "raxod502/el-patch"))
 
 Manually:
 
@@ -18,7 +17,6 @@ Manually:
 
     (add-to-list 'load-path "/path/to/el-patch")
     (require 'el-patch)
-    (el-patch-disable-validation-during-init)
 
 `el-patch` is not yet hosted on MELPA. If you love `el-patch`, feel
 free to open a pull request on MELPA to add it.
@@ -251,20 +249,6 @@ el-patch-ediff-conflict`.
 
 You can validate all the patches that have been defined so far using
 `M-x el-patch-validate-all`.
-
-In addition to this, patches are validated automatically right after
-they are defined if the variable `el-patch-validation` is non-nil. It
-doesn't make a whole lot of sense to run validation all the time,
-since it's only really necessary when you upgrade Emacs or your
-packages, and it slows down Emacs startup.
-
-It is therefore recommended that you call
-`el-patch-disable-validation-during-init` before you define any
-patches. This function disables `el-patch-validation` during Emacs
-startup and then re-enables it once startup is complete.
-
-If you have a function for reloading your init-file, you may want to
-wrap the call to `load` in `(let ((el-patch-validation nil)) ...)`.
 
 ## Removing patches
 

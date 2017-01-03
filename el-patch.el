@@ -302,33 +302,6 @@ See `el-patch-validate'."
       (message "%d patches are valid, %d patches are invalid"
                (- patch-count warning-count) warning-count)))))
 
-(defvar el-patch-validation t
-  "Whether or not to perform validation when a patch is defined.
-If non-nil, then evaluating an `el-patch-defun' or
-`el-patch-defmacro' form will automatically call
-`el-patch-validate', and will only install the patch if it
-is still valid.
-
-Validation is slow and can generate messages, so it is
-recommended that you set this variable to nil during Emacs
-startup, and then set it back to t afterwards. This can be done
-by calling the function `el-patch-disable-validation-during-init'
-in your init-file.")
-
-(defun el-patch--reenable-validation-after-init ()
-  "Enable `el-patch-validation'.
-Also remove this function from `after-init-hook'."
-  (setq el-patch-validation t)
-  (remove-hook 'after-init-hook #'el-patch--reenable-validation-after-init))
-
-;;;###autoload
-(defun el-patch-disable-validation-during-init ()
-  "Disable `el-patch-validation' temporarily during Emacs startup.
-Precisely, set it to nil and then set it to t when
-`after-init-hook' runs."
-  (setq el-patch-validation nil)
-  (add-hook 'after-init-hook #'el-patch--reenable-validation-after-init))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Applying patches
 
@@ -379,23 +352,21 @@ etc. Update `el-patch--patches', create the advice, and activate
 it."
   (let* ((function-name (cadr patch-definition))
          (advice-name (el-patch--advice-name function-name)))
-    (when (or (not el-patch-validation)
-              (el-patch-validate patch-definition))
-      (puthash function-name patch-definition el-patch--patches)
-      (setq el-patch--feature nil)
-      (eval (el-patch--function-to-advice
-             (el-patch--resolve-definition patch-definition t)))
-      ;; FIXME should not require `el-patch-feature' directive if the
-      ;; function is autoloaded
-      (unless (and (fboundp function-name)
-                   (not (autoloadp (symbol-function function-name))))
-        (unless el-patch--feature
-          (error "You must specify an `el-patch-feature' directive for `%S'"
-                 function-name))
-        (el-patch--stealthy-defun
-         function-name
-         (el-patch--autoload-function function-name el-patch--feature)))
-      (advice-add function-name :override advice-name))))
+    (puthash function-name patch-definition el-patch--patches)
+    (setq el-patch--feature nil)
+    (eval (el-patch--function-to-advice
+           (el-patch--resolve-definition patch-definition t)))
+    ;; FIXME should not require `el-patch-feature' directive if the
+    ;; function is autoloaded
+    (unless (and (fboundp function-name)
+                 (not (autoloadp (symbol-function function-name))))
+      (unless el-patch--feature
+        (error "You must specify an `el-patch-feature' directive for `%S'"
+               function-name))
+      (el-patch--stealthy-defun
+       function-name
+       (el-patch--autoload-function function-name el-patch--feature)))
+    (advice-add function-name :override advice-name)))
 
 ;;;###autoload
 (defmacro el-patch-defun (&rest args)
