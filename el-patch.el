@@ -379,7 +379,7 @@ it."
   (let* ((function-name (cadr patch-definition))
          (advice-name (el-patch--advice-name function-name)))
     (when (or (not el-patch-validation)
-              (el-patch-validate patch-definition 'nomsg))
+              (el-patch-validate patch-definition))
       (puthash function-name patch-definition el-patch--patches)
       (setq el-patch--feature nil)
       (eval (el-patch--function-to-advice
