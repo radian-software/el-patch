@@ -564,6 +564,9 @@ This restores the original functionality of FUNCTION-NAME."
     (fmakunbound advice-name)
     (remhash function-name el-patch--patches)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Closing remarks
+
 (provide 'el-patch)
 
 ;;; el-patch.el ends here
