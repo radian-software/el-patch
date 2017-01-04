@@ -80,12 +80,10 @@ specified in a `el-patch-feature' directive."
   (let ((table (or table (make-hash-table :test 'equal))))
     (if (listp form)
         (let* ((directive (nth 0 form))
-               (this-directive (if new
-                                   (pcase directive
-                                     ('el-patch-remove 'el-patch-add)
-                                     ('el-patch-splice 'el-patch-wrap)
-                                     (_ directive))
-                                 directive))
+               (this-directive (pcase directive
+                                 ('el-patch-remove 'el-patch-add)
+                                 ('el-patch-splice 'el-patch-wrap)
+                                 (_ directive)))
                (inverted (not (equal this-directive directive)))
                (this-new (if inverted (not new) new))
                (resolve (lambda (form) (el-patch--resolve form new table))))
