@@ -56,7 +56,7 @@ package:
       "Restore statistics."
       (load company-statistics-file 'noerror nil 'nosuffix))
 
-[company-statistics]: https://github.com/company-mode/company-statistics
+[`company-statistics`]: https://github.com/company-mode/company-statistics
 
 Suppose we want to change the third argument from `nil` to
 `'nomessage`, to suppress the message that is logged when
