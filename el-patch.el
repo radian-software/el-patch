@@ -204,17 +204,20 @@ in a `el-patch-feature' directive."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Validating patches
 
-;;;###autoload
-(defun el-patch-declare-feature (feature)
-  "Declare that there are unloaded patch definitions for FEATURE.
-This is useful if you lazy-load your configuration and the
-patches for functions provided by a certain feature are not
-defined until that feature is actually loaded.
+(defvar el-patch-pre-validate-hook nil
+  "Hook run before `el-patch-validate-all'.
+Also run before `el-patch-validate' if a prefix argument is
+provided. This hook should contain functions that make sure all
+of your patches are defined (for example, you might need to load
+some features if your patches are lazily defined).")
 
-If you declare a feature in this way, then it is loaded when you
-call `el-patch-validate-all', or when you call
-`el-patch-validate' with a prefix argument."
-  (cl-pushnew feature el-patch--features))
+(defvar el-patch-post-validate-hook nil
+  "Hook run after `el-patch-validate-all'.
+Also run after `el-patch-validate' if a prefix argument is
+provided. This hook should contain functions that undo any
+patching that might have taken place in
+`el-patch-pre-validate-hook', if you do not want the patches to
+be defined permanently.")
 
 (defun el-patch--find-function (name)
   "Return the Lisp form that defines the function NAME.
@@ -253,7 +256,7 @@ autoloaded and not provided by `el-patch--feature'.) If
                (read defun-buffer)))))))
 
 ;;;###autoload
-(defun el-patch-validate (patch-definition &optional nomsg)
+(defun el-patch-validate (patch-definition &optional nomsg run-hooks)
   "Validate the patch given by PATCH-DEFINITION.
 This means el-patch will attempt to find the original definition
 for the function, and verify that it is the same as the original
@@ -263,8 +266,7 @@ there is a difference between the actual and expected original
 definitions.
 
 Interactively, use `completing-read' to select a function to
-inspect the patch of. With a prefix argument, load all the
-features declared by `el-patch-declare-feature' first.
+inspect the patch of.
 
 PATCH-DEFINITION is a list beginning with `defun', `defmacro',
 etc.
@@ -273,63 +275,71 @@ Returns nil if the patch is not valid, and otherwise returns t.
 If NOMSG is non-nil, does not signal a message when the patch is
 valid.
 
+If RUN-HOOKS is non-nil, runs `el-patch-pre-validate-hook' and
+`el-patch-post-validate-hook'. Interactively, this happens when a
+prefix argument is provided.
+
 See also `el-patch-validate-all'."
   (interactive (progn
                  (when current-prefix-arg
-                   (dolist (feature el-patch--features)
-                     (require feature)))
-                 (list (el-patch--select-patch))))
-  (setq el-patch--feature nil)
-  (let* ((name (cadr patch-definition))
-         (expected-definition (el-patch--resolve-definition
-                               patch-definition nil))
-         (actual-definition (el-patch--find-function name)))
-    (cond
-     ((not actual-definition)
-      (display-warning
-       'el-patch
-       (format "Could not find definition of `%S'" name))
-      nil)
-     ((not (equal expected-definition actual-definition))
+                   (run-hooks 'el-patch-pre-validate-hook))
+                 (list (el-patch--select-patch) nil current-prefix-arg)))
+  (unwind-protect
+      (progn
+        (setq el-patch--feature nil)
+        (let* ((name (cadr patch-definition))
+               (expected-definition (el-patch--resolve-definition
+                                     patch-definition nil))
+               (actual-definition (el-patch--find-function name)))
+          (cond
+           ((not actual-definition)
+            (display-warning
+             'el-patch
+             (format "Could not find definition of `%S'" name))
+            nil)
+           ((not (equal expected-definition actual-definition))
 
-      (display-warning
-       'el-patch
-       (format (concat "Definition of `%S' differs from what "
-                       "is assumed by its patch")
-               name))
-      nil)
-     (t
-      (unless nomsg
-        (message "Patch is valid"))
-      t))))
+            (display-warning
+             'el-patch
+             (format (concat "Definition of `%S' differs from what "
+                             "is assumed by its patch")
+                     name))
+            nil)
+           (t
+            (unless nomsg
+              (message "Patch is valid"))
+            t))))
+    (when run-hooks
+      (run-hooks 'el-patch-post-validate-hook))))
 
 ;;;###autoload
 (defun el-patch-validate-all ()
   "Validate all currently defined patches.
-Load all the features declared by `el-patch-declare-feature'
-first.
+Runs `el-patch-pre-validate-hook' and
+`el-patch-post-validate-hook'.
 
 See `el-patch-validate'."
   (interactive)
-  (dolist (feature el-patch--features)
-    (require feature))
-  (let ((patch-count 0)
-        (warning-count 0))
-    (maphash (lambda (name patch-definition)
-               (setq patch-count (1+ patch-count))
-               (unless (el-patch-validate patch-definition 'nomsg)
-                 (setq warning-count (1+ warning-count))))
-             el-patch--patches)
-    (cond
-     ((zerop patch-count)
-      (user-error "No patches defined"))
-     ((zerop warning-count)
-      (message "All %d patches are valid" patch-count))
-     ((= patch-count warning-count)
-      (message "All %d patches are invalid" patch-count))
-     (t
-      (message "%d patches are valid, %d patches are invalid"
-               (- patch-count warning-count) warning-count)))))
+  (run-hooks 'el-patch-pre-validate-hook)
+  (unwind-protect
+      (let ((patch-count 0)
+            (warning-count 0))
+        (maphash (lambda (name patch-definition)
+                   (setq patch-count (1+ patch-count))
+                   (unless (el-patch-validate patch-definition 'nomsg)
+                     (setq warning-count (1+ warning-count))))
+                 el-patch--patches)
+        (cond
+         ((zerop patch-count)
+          (user-error "No patches defined"))
+         ((zerop warning-count)
+          (message "All %d patches are valid" patch-count))
+         ((= patch-count warning-count)
+          (message "All %d patches are invalid" patch-count))
+         (t
+          (message "%d patches are valid, %d patches are invalid"
+                   (- patch-count warning-count) warning-count))))
+    (run-hooks 'el-patch-post-validate-hook)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Applying patches
