@@ -256,6 +256,8 @@ Use `M-x el-patch-unpatch`.
 
 ## Autoloading
 
+### Patching functions that are not loaded yet
+
 If you've gotten far enough into Emacs to be interested in something
 like `el-patch`, you probably lazy-load a lot of your packages.
 `el-patch` uses advice under the hood to implement your patches, and
@@ -288,6 +290,43 @@ Once `el-patch` knows what feature (in this case `clojure-mode`)
 provides the function being patched, it can generate a stub function
 that acts as an autoload, and you can therefore patch unloaded
 functions just fine.
+
+### Using `el-patch` to help lazy-load packages
+
+One side effect of this is that you can use `el-patch` to help you
+lazy-load packages. Many packages have a function you can call to
+establish keybindings for the functions in the package. However,
+calling this function during init defeats the point of lazy-loading,
+since doing so will cause the whole package to be loaded immediately.
+
+The obvious solution is to copy the keybinding-establishing function
+into your init-file, but then what if the original definition changes?
+You can use `el-patch` to validate your copy of the function: just
+define a no-op patch by copying the function definition and replacing
+`defun` with `el-patch-defun` (and making sure to specify
+`el-patch-feature`).
+
+### Validating patches that are not loaded yet
+
+If you want to define a patch for a function provided by an unloaded
+feature, it is more likely that you will just put the patch in a
+`with-eval-after-load` for the feature. But then `el-patch-validate`
+and `el-patch-validate-all` will not be able to validate your patch,
+because it is not yet defined.
+
+To get around this problem, you can add functions to
+`el-patch-pre-validate-hook` in order to make sure all your patches
+are defined (for instance, you might need to require some features or
+even enable a custom minor mode). This hook is run before
+`el-patch-validate-all`, and also before `el-patch-validate` when you
+provide a prefix argument.
+
+If you don't want all of your patches to be defined all the time, you
+can put some functions in `el-patch-post-validate-hook` to disable
+them again. For some examples of how to use these hooks, check out [my
+Emacs init-file].
+
+[my emacs init-file]: https://github.com/raxod502/radian/blob/master/init.el
 
 ## But how does it work?
 
