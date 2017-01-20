@@ -39,6 +39,12 @@ patch definitions, which are lists beginning with `defun',
 This is set to the argument of the last `el-patch-feature'
 directive processed by `el-patch--resolve'.")
 
+(defvar el-patch--features nil
+  "List of features that have been declared to contain patches.
+All of these features will be loaded when you call
+`el-patch-validate-all', or when you call `el-patch-validate'
+with a prefix argument.")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Resolving patches
 
@@ -198,6 +204,18 @@ in a `el-patch-feature' directive."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Validating patches
 
+;;;###autoload
+(defun el-patch-declare-feature (feature)
+  "Declare that there are unloaded patch definitions for FEATURE.
+This is useful if you lazy-load your configuration and the
+patches for functions provided by a certain feature are not
+defined until that feature is actually loaded.
+
+If you declare a feature in this way, then it is loaded when you
+call `el-patch-validate-all', or when you call
+`el-patch-validate' with a prefix argument."
+  (cl-pushnew feature el-patch--features))
+
 (defun el-patch--find-function (name)
   "Return the Lisp form that defines the function NAME.
 Return nil if such a definition cannot be found. (That would
@@ -244,6 +262,10 @@ original definition for a patched function cannot be found, or if
 there is a difference between the actual and expected original
 definitions.
 
+Interactively, use `completing-read' to select a function to
+inspect the patch of. With a prefix argument, load all the
+features declared by `el-patch-declare-feature' first.
+
 PATCH-DEFINITION is a list beginning with `defun', `defmacro',
 etc.
 
@@ -252,7 +274,11 @@ If NOMSG is non-nil, does not signal a message when the patch is
 valid.
 
 See also `el-patch-validate-all'."
-  (interactive (list (el-patch--select-patch)))
+  (interactive (progn
+                 (when current-prefix-arg
+                   (dolist (feature el-patch--features)
+                     (require feature)))
+                 (list (el-patch--select-patch))))
   (setq el-patch--feature nil)
   (let* ((name (cadr patch-definition))
          (expected-definition (el-patch--resolve-definition
@@ -280,8 +306,13 @@ See also `el-patch-validate-all'."
 ;;;###autoload
 (defun el-patch-validate-all ()
   "Validate all currently defined patches.
+Load all the features declared by `el-patch-declare-feature'
+first.
+
 See `el-patch-validate'."
   (interactive)
+  (dolist (feature el-patch--features)
+    (require feature))
   (let ((patch-count 0)
         (warning-count 0))
     (maphash (lambda (name patch-definition)
