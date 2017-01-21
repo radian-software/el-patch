@@ -6,7 +6,7 @@
 ;; Created: 31 Dec 2016
 ;; Homepage: https://github.com/raxod502/el-patch
 ;; Keywords: extensions
-;; Package-Requires: ((emacs "24.4"))
+;; Package-Requires: ((emacs "25"))
 ;; Version: 1.0
 
 ;;; Commentary:
