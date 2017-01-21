@@ -3,9 +3,11 @@
 ;; Copyright (C) 2016 Radon Rosborough
 
 ;; Author: Radon Rosborough <radon.neon@gmail.com>
+;; Created: 31 Dec 2016
 ;; Homepage: https://github.com/raxod502/el-patch
 ;; Keywords: extensions
-;; Created: 31 Dec 2016
+;; Package-Requires: ((emacs "24.4"))
+;; Version: 1.0
 
 ;;; Commentary:
 
