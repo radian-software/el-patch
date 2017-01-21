@@ -361,6 +361,12 @@ be used to define an `:override' advice."
        ,@(cddr definition)))
 
 (defun el-patch--autoload-function (function-name feature)
+  "Generate the code for an autoload stub.
+This will return a list starting with `defun'. The function is
+called FUNCTION-NAME. When the function is called, it will load
+FEATURE (which is expected to redefine FUNCTION-NAME) and then
+call itself. If FEATURE did not redefine FUNCTION-NAME, an error
+is signaled."
   (let ((recursive-autoload
          (intern (format "el-patch--recursive-autoload--%S"
                          function-name))))
@@ -382,10 +388,6 @@ then invoke the actual definition of
          (require ',feature)
          (apply ',function-name args)))))
 
-(defun el-patch--stealthy-defun (function-name definition)
-  ;; FIXME should prevent `load-history' from being updated
-  (eval definition))
-
 (defun el-patch--definition (patch-definition)
   "Activate a PATCH-DEFINITION.
 PATCH-DEFINITION is a list starting with `defun', `defmacro',
@@ -404,8 +406,7 @@ it."
       (unless el-patch--feature
         (error "You must specify an `el-patch-feature' directive for `%S'"
                function-name))
-      (el-patch--stealthy-defun
-       function-name
+      (eval
        (el-patch--autoload-function function-name el-patch--feature)))
     (advice-add function-name :override advice-name)))
 
@@ -536,9 +537,9 @@ Return the patch definition, a list beginning with `defun',
 
 (defun el-patch--ediff-forms (name1 form1 name2 form2)
   "Ediff two forms.
-Obtain empty buffers named NAME1 and NAME2, pretty-print FORM1
-and FORM2 into them respectively, and run Ediff on the two
-buffers wordwise."
+Obtain and empty buffer named NAME1 and pretty-print FORM1 into
+it. Do the same for NAME2 and FORM2, and then run Ediff on the
+two buffers wordwise."
   (let ((min1) (max1) (min2) (max2))
     (with-current-buffer (get-buffer-create name1)
       (erase-buffer)
