@@ -230,7 +230,8 @@ body of the function to use patch directives, so that the modified
 definition is what you desire.
 
 You can also patch other types of definitions using
-`el-patch-defmacro` and `el-patch-defsubst`.
+`el-patch-defmacro` and `el-patch-defsubst`. (However, beware of eager
+macroexpansion and function inlining!)
 
 ## Inspecting patches
 
