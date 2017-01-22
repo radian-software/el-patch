@@ -149,7 +149,7 @@ specified in a `el-patch-feature' directive."
                 ((> (+ triml trimr) (length body))
                  (error "Combined trim (%d + %d) greater than body length (%d) for `%s'"
                         triml trimr (length body) directive)))
-               (if new
+               (if this-new
                    (list (cl-mapcan resolve body))
                  (cl-mapcan resolve (nthcdr triml (butlast body trimr))))))
             ((quote el-patch-let)
