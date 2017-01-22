@@ -81,7 +81,7 @@ In this case, we use the `el-patch-swap` directive. The
 (that is, the version that is compared against the "official"
 definition in `company-statistics.el`), and with `'nomessage` in the
 modified definition (that is, the version that is actually evaluated
-in your init-file.
+in your init-file).
 
 ## Patch directives
 
