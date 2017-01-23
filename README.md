@@ -2,14 +2,33 @@
 
 > Future-proof your Emacs Lisp customizations!
 
-## Quick start
+## TL;DR
 
-Using `quelpa-use-package`:
+### How do I get it
+
+Using [`straight.el`]:
 
     (use-package el-patch
-      :ensure t
-      :demand t
-      :quelpa (el-patch :fetcher github :repo "raxod502/el-patch"))
+      :recipe (:fetcher github
+               :repo "raxod502/el-patch")
+      :demand t)
+
+[`straight.el`]: https://github.com/raxod502/straight.el
+
+Using [`quelpa-use-package`]:
+
+    (use-package el-patch
+      :quelpa (el-patch :fetcher github :repo "raxod502/el-patch")
+      :demand t)
+
+[`quelpa-use-package`]: https://github.com/quelpa/quelpa-use-package
+
+Using [`quelpa`]:
+
+    (quelpa '(el-patch :fetcher github :repo "raxod502/el-patch"))
+    (require 'el-patch)
+
+[`quelpa`]: https://github.com/quelpa/quelpa
 
 Manually:
 
@@ -18,17 +37,32 @@ Manually:
     (add-to-list 'load-path "/path/to/el-patch")
     (require 'el-patch)
 
-`el-patch` is not yet hosted on MELPA. If you love `el-patch`, feel
-free to open a pull request on MELPA to add it.
+`el-patch` is not [yet] hosted on MELPA.
 
-## Motivation
+[yet]: https://github.com/melpa/melpa/pull/4512
+
+### What is it
+
+Like the [advice] system, `el-patch` provides a way to customize the
+behavior of Emacs Lisp functions that do not provide enough variables
+and hooks to let you make them do what you want. The advantage of
+using `el-patch` is that you will be notified if the definition of a
+function you are customizing changes, so that you are aware your
+customizations might need to be updated.
+
+[advice]: https://www.gnu.org/software/emacs/manual/html_node/elisp/Advising-Functions.html
+
+Using the same mechanism, `el-patch` also provides [a way] to make
+lazy-loading packages much more easy, powerful, and robust.
+
+[a way]: #lazy-loading-packages
+
+## Why does it exist
 
 Emacs provides a comprehensive set of customizable variables and hooks
 as well as a powerful [advice] system. Sometimes, however, these are
 not enough and you must override the entire function in order to
 change a detail of its implementation.
-
-[advice]: https://www.gnu.org/software/emacs/manual/html_node/elisp/Advising-Functions.html
 
 Such a situation is not ideal, since the original definition of the
 function might change when you update Emacs or one of its packages,
@@ -74,7 +108,7 @@ patch: that is, it has no effect (well, not quite—see [later]).
 However, by including *patch directives*, you can make the modified
 version of the function different from the original.
 
-[later]: #autoloading
+[later]: #lazy-loading-packages
 
 In this case, we use the `el-patch-swap` directive. The
 `el-patch-swap` form is replaced with `nil` in the original definition
@@ -91,11 +125,11 @@ in your init-file).
   removed, and in the modified definition, each of the `ARGS` is
   spliced into the surrounding form. For example, the following patch:
 
-        (foo (el-patch-add bar baz) quux)
+      (foo (el-patch-add bar baz) quux)
 
   resolves to this in the modified definition:
 
-        (foo bar baz quux)
+      (foo bar baz quux)
 
 * `(el-patch-remove ARGS...)`
 
@@ -114,20 +148,20 @@ in your init-file).
   additional forms. This is the most complicated directive, so an
   example will probably be helpful. The following patch:
 
-        (el-patch-wrap 1 1
-          (or
-           (eq (get-text-property (point) 'face) 'font-lock-doc-face)
-           (eq (get-text-property (point) 'face) 'font-lock-string-face)))
-
-  resolves to this in the original definition:
-
-        (eq (get-text-property (point) 'face) 'font-lock-doc-face)
-
-  and this in the modified definition:
-
+      (el-patch-wrap 1 1
         (or
          (eq (get-text-property (point) 'face) 'font-lock-doc-face)
          (eq (get-text-property (point) 'face) 'font-lock-string-face)))
+
+  resolves to this in the original definition:
+
+      (eq (get-text-property (point) 'face) 'font-lock-doc-face)
+
+  and this in the modified definition:
+
+      (or
+       (eq (get-text-property (point) 'face) 'font-lock-doc-face)
+       (eq (get-text-property (point) 'face) 'font-lock-string-face)))
 
   That is, the original `eq` call has been wrapped in an additional
   list, and also it has had forms inserted before and after it. The
@@ -157,29 +191,29 @@ in your init-file).
   Sometimes you need to restructure a form in an inconvenient way. For
   example, suppose you need to turn the following form:
 
-        (if $cond
-            $then
-          $else)
+      (if $cond
+          $then
+        $else)
 
   into the following form:
 
-        (cond
-         ($cond $then)
-         ($new-cond $new-then)
-         (t $else))
+      (cond
+       ($cond $then)
+       ($new-cond $new-then)
+       (t $else))
 
   where `$cond`, `$then`, `$new-cond`, `$new-then`, and `$else` are
   all long forms with many sub-expressions. You could do it in the
   following way:
 
-        (el-patch-swap
-          (if $cond
-              $then
-            $else)
-          (cond
-           ($cond $then)
-           ($new-cond $new-then)
-           (t $else)))
+      (el-patch-swap
+        (if $cond
+            $then
+          $else)
+        (cond
+         ($cond $then)
+         ($new-cond $new-then)
+         (t $else)))
 
   However, this is not ideal because you have repeated the forms and
   violated [DRY].
@@ -190,19 +224,19 @@ in your init-file).
   basic patch directives, but that would be hard to read. Wouldn't it
   be great if you could just do the following?
 
-        (el-patch-let (($cond (... long form ...))
-                       ($then (... another form ...))
-                       ($else (... more code ...))
-                       ($new-cond (... even more ...))
-                       ($new-then (... lots more code ...)))
-          (el-patch-swap
-            (if $cond
-                $then
-              $else)
-            (cond
-             ($cond $then)
-             ($new-cond $new-then)
-             (t $else))))
+      (el-patch-let (($cond (... long form ...))
+                     ($then (... another form ...))
+                     ($else (... more code ...))
+                     ($new-cond (... even more ...))
+                     ($new-then (... lots more code ...)))
+        (el-patch-swap
+          (if $cond
+              $then
+            $else)
+          (cond
+           ($cond $then)
+           ($new-cond $new-then)
+           (t $else))))
 
   Well, you can. Welcome to `el-patch`.
 
@@ -214,11 +248,11 @@ in your init-file).
   `el-patch-literal` to prevent anything within from being interpreted
   by `el-patch`. For example, the following form:
 
-        (foo (patch-literal (patch-add bar baz)) quux)
+      (foo (patch-literal (patch-add bar baz)) quux)
 
   will be replaced with:
 
-        (foo (patch-add bar baz) quux)
+      (foo (patch-add bar baz) quux)
 
   in both the original and modified definitions.
 
@@ -229,9 +263,25 @@ init-file, and replace `defun` with `el-patch-defun`. Then modify the
 body of the function to use patch directives, so that the modified
 definition is what you desire.
 
-You can also patch other types of definitions using
-`el-patch-defmacro` and `el-patch-defsubst`. (However, beware of eager
-macroexpansion and function inlining!)
+You can also patch other types of definitions using:
+
+* `el-patch-defmacro`
+
+  (Warning: this will not affect usages of the macro in functions that
+  have already been defined.)
+
+* `el-patch-defsubst`
+
+  (Warning: this will not affect usages of the inline function in
+  functions that have already been defined.)
+
+* `el-patch-defvar`
+
+* `el-patch-defgroup`
+
+* `el-patch-defcustom`
+
+* `el-patch-define-minor-mode`
 
 ## Inspecting patches
 
@@ -255,62 +305,67 @@ You can validate all the patches that have been defined so far using
 
 Use `M-x el-patch-unpatch`.
 
-## Autoloading
+## Lazy-loading packages
 
-### Patching functions that are not loaded yet
+`el-patch` does not mind if you patch a function that is not yet
+defined. You can therefore use `el-patch` to help lazy-load a package.
 
-If you've gotten far enough into Emacs to be interested in something
-like `el-patch`, you probably lazy-load a lot of your packages.
-`el-patch` uses advice under the hood to implement your patches, and
-unfortunately it's not possible to define advice on functions that are
-not loaded yet—even if they are autoloaded.
+As an example, consider the [`ivy`] package. `ivy` provides a minor
+mode called `ivy-mode` that sets `completing-read-function` to
+`ivy-completing-read`. The idea is that you call this function
+immediately, so that when a `completing-read` happens, it calls into
+the Ivy code.
 
-Therefore, trying to `el-patch-defun` an unloaded function will cause
-an error. For example, the following will not work and will signal an
-error:
+[`ivy`]: https://github.com/abo-abo/swiper
 
-        (el-patch-defsubst clojure-in-docstring-p ()
-          "Check whether point is in a docstring."
-          (el-patch-wrap 1 1
-            (or
-             (eq (get-text-property (point) 'face) 'font-lock-doc-face)
-             (eq (get-text-property (point) 'face) 'font-lock-string-face))))
+Now, `ivy-completing-read` is autoloaded. However, calling `ivy-mode`
+will trigger the autoload for Ivy, so we can't do that if we want to
+lazy-load the package. The natural thing to do is to copy the
+definition of `ivy-mode` into our init-file, but what if the original
+definition changes? That's where `el-patch` comes in. The code from
+Ivy looks like this:
 
-However, you can fix the problem by placing an `el-patch-feature`
-directive somewhere in the patch definition:
+    (defvar ivy-mode-map
+      (let ((map (make-sparse-keymap)))
+        (define-key map [remap switch-to-buffer]
+          'ivy-switch-buffer)
+        (define-key map [remap switch-to-buffer-other-window]
+          'ivy-switch-buffer-other-window)
+        map)
+      "Keymap for `ivy-mode'.")
 
-        (el-patch-defsubst clojure-in-docstring-p ()
-          "Check whether point is in a docstring."
-          (el-patch-feature clojure-mode)
-          (el-patch-wrap 1 1
-            (or
-             (eq (get-text-property (point) 'face) 'font-lock-doc-face)
-             (eq (get-text-property (point) 'face) 'font-lock-string-face))))
+    (define-minor-mode ivy-mode
+      "Toggle Ivy mode on or off.
+    Turn Ivy mode on if ARG is positive, off otherwise.
+    Turning on Ivy mode sets `completing-read-function' to
+    `ivy-completing-read'.
 
-Once `el-patch` knows what feature (in this case `clojure-mode`)
-provides the function being patched, it can generate a stub function
-that acts as an autoload, and you can therefore patch unloaded
-functions just fine.
+    Global bindings:
+    \\{ivy-mode-map}
 
-### Using `el-patch` to help lazy-load packages
+    Minibuffer bindings:
+    \\{ivy-minibuffer-map}"
+      :group 'ivy
+      :global t
+      :keymap ivy-mode-map
+      :lighter " ivy"
+      (if ivy-mode
+          (progn
+            (setq completing-read-function 'ivy-completing-read)
+            (when ivy-do-completion-in-region
+              (setq completion-in-region-function 'ivy-completion-in-region)))
+        (setq completing-read-function 'completing-read-default)
+        (setq completion-in-region-function 'completion--in-region)))
 
-One side effect of this is that you can use `el-patch` to help you
-lazy-load packages. Many packages have a function you can call to
-establish keybindings for the functions in the package. However,
-calling this function during init defeats the point of lazy-loading,
-since doing so will cause the whole package to be loaded immediately.
-
-The obvious solution is to copy the keybinding-establishing function
-into your init-file, but then what if the original definition changes?
-You can use `el-patch` to validate your copy of the function: just
-define a no-op patch by copying the function definition and replacing
-`defun` with `el-patch-defun` (and making sure to specify
-`el-patch-feature`).
+To enable `ivy-mode` while still lazy-loading `ivy`, simply copy those
+definitions to your init-file before the call to `ivy-mode`, replacing
+`defvar` with `el-patch-defvar` and replacing `define-minor-mode` with
+`el-patch-define-minor-mode`.
 
 ### Validating patches that are not loaded yet
 
 If you want to define a patch for a function provided by an unloaded
-feature, it is more likely that you will just put the patch in a
+feature, it is likely that you will just put the patch in a
 `with-eval-after-load` for the feature. But then `el-patch-validate`
 and `el-patch-validate-all` will not be able to validate your patch,
 because it is not yet defined.
@@ -331,12 +386,19 @@ Emacs init-file].
 
 ## But how does it work?
 
+Magic.
+
+## But how does it actually work?
+
 The basic idea is simple. When a patch is defined, the patch
-definition is resolved to figure out the modified definition is. Then
-a private function is defined using that definition, and an
-`:override` advice is added to the actual function to instal the
-definition. When you call `M-x el-patch-unpatch`, the advice is
-removed.
+definition is resolved to figure out the modified definition is. The
+actual definition (as determined by [`symbol-value` or
+`symbol-function`]) is saved in the [symbol plist], and it is
+overridden using `set` or `fset`. When you call `M-x
+el-patch-unpatch`, the original definition is restored.
+
+[`symbol-value` or `symbol-function`]: https://www.gnu.org/software/emacs/manual/html_node/elisp/Symbol-Components.html
+[symbol plist]: https://www.gnu.org/software/emacs/manual/html_node/elisp/Symbol-Plists.html
 
 Whenever a patch is defined, it's also recorded in the hash
 `el-patch--patches`, which allows for the functionality of `M-x
@@ -344,10 +406,6 @@ el-patch-ediff-patch`. Obtaining the actual original definition of a
 function is done using a modified version of `find-function-noselect`,
 which provides for `M-x el-patch-validate` and `M-x
 el-patch-ediff-conflict`.
-
-Unloaded functions are trickier, and the code to handle them is liable
-to change soon. Basically, `el-patch` generates its own autoload stub
-to override any existing autoload, and then adds the advice to that.
 
 ## But does it actually work?
 
