@@ -33,8 +33,7 @@
 
 ### How do I get it
 
-Using `straight.el` or `quelpa`, optionally with `quelpa-use-package`.
-See [Installation].
+From MELPA, using your package manager of choice. See [Installation].
 
 [installation]: #installation
 
