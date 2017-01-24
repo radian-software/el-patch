@@ -33,16 +33,14 @@
 The keys are symbols naming the objects that have been patched.
 The values are hash tables mapping definition types (symbols
 `defun', `defmacro', etc.) to patch definitions, which are lists
-beginning with `defun', `defmacro', etc.")
+beginning with `defun', `defmacro', etc.
+
+Note that the symbols are from the versions of patches that have
+been resolved in favor of the modified version, when a patch
+renames a symbol.")
 
 (defvar el-patch--not-present 'key-is-not-present-in-hash-table
   "Value used as a default argument to `gethash'.")
-
-(defvar el-patch--features nil
-  "List of features that have been declared to contain patches.
-All of these features will be loaded when you call
-`el-patch-validate-all', or when you call `el-patch-validate'
-with a prefix argument.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Resolving patches
@@ -328,134 +326,6 @@ See `el-patch-validate'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Applying patches
 
-(defun el-patch--advice-mapc (f symbol)
-  "Apply F to every advice function in SYMBOL.
-FUN is called with three arguments: the symbol for the function
-that was added, the keyword identifying its place (`:before',
-`:around', etc.), and the properties alist that was specified
-when it was added.
-
-Advices are processed outermost to innermost.
-
-See also `advice-mapc'."
-  (let ((function-def (advice--symbol-function symbol)))
-    (while (advice--p function-def)
-      (let ((bytecode (aref (advice--cdr function-def) 1))
-            (where nil))
-        ;; Stole this from `advice--make-docstring':
-        (dolist (elem advice--where-alist)
-          (when (eq bytecode (cadr elem))
-            (setq where (car elem))))
-        (funcall f (advice--car function-def)
-                 where (advice--props function-def))
-        (setq function-def (advice--cdr function-def))))))
-
-(defmacro el-patch--without-advice (symbol &rest body)
-  "Remove the advice from SYMBOL, exec BODY, and restore it.
-The order and properties of the advice are preserved. SYMBOL
-should be quoted (i.e. it is evaluated to obtain the function
-name.) Return the value of the last expression in BODY."
-  (declare (indent 1))
-  ;; Emacs Lisp version of gensym.
-  (let ((the-symbol symbol)
-        (symbol (make-symbol "symbol"))
-        (advices (make-symbol "advices")))
-    `(let ((,symbol ,the-symbol)
-           (,advices nil))
-       ;; Record all the advices and their property lists.
-       (el-patch--advice-mapc
-        (lambda (func where props)
-          (push (list func where props) ,advices))
-        ',symbol)
-       ;; Remove all the advices.
-       (dolist (advice ,advices)
-         (advice-remove ,symbol (car advice)))
-       ;; Exec BODY and restore the advices.
-       (prog1 (progn ,@body)
-         ;; Note that this puts the advices back in the reverse order
-         ;; that we received them from `advice-function-mapc'. This is
-         ;; what we want because we get the advices from outermost to
-         ;; innermost, and we have to put them back from innermost to
-         ;; outermost.
-         (dolist (advice ,advices)
-           (cl-destructuring-bind (func where props) advice
-             (advice-add ,symbol where func props)))))))
-
-(defun el-patch--encode (symbol type)
-  "Create an object that represents the state of SYMBOL.
-This will be nil if the SYMBOL is unbound, and a list containing
-its value as a single element otherwise. If TYPE is `function'
-then the symbol's function cell is used; if TYPE is `value' then
-the symbol's value cell is used."
-  (pcase type
-    ('function
-     (when (fboundp symbol)
-       (list (symbol-function symbol))))
-    ('value
-     (when (boundp symbol)
-       (list (symbol-value symbol))))
-    (_ (error "Invalid type `%S'" type))))
-
-(defun el-patch--save-definition (definition &optional restore)
-  "Apply a definition.
-This overwrites the original function or variable definition,
-saving it to the symbol's property list. DEFINITION is a list
-starting with `defun', `defmacro', etc., which may not contain
-patch directives.
-
-If RESTORE is non-nil, restores the original definition instead."
-  (cl-destructuring-bind (type name . body) definition
-    (pcase type
-      ((or 'defun 'defmacro 'defsubst)
-       (el-patch--without-advice name
-         (if restore
-             (progn
-               (if (equal (get name :el-patch-function-current)
-                          (el-patch--encode name 'function))
-                   (let ((info (get name :el-patch-function)))
-                     (if (consp info)
-                         (fset name (car info))
-                       (fmakunbound name)))
-                 (display-warning
-                  'el-patch
-                  (format "Definition of %S `%S' has changed, not unpatching"
-                          type name)))
-               (put name :el-patch-function-original nil))
-           (let ((current `(lambda ,@(cddr definition))))
-             (fset name current)
-             (unless (get name :el-patch-function-original)
-               (put name :el-patch-function-original
-                    (el-patch--encode name 'function)))
-             (put name :el-patch-function-current current)))))
-      ((or 'defvar 'defcustom)
-       (if restore
-           (if (equal (get name :el-patch-variable-current)
-                      (el-patch--encode name 'value))
-               (let ((info (get name :el-patch-variable)))
-                 (if (consp info)
-                     (setq name (car info))
-                   (makunbound name)))
-             (display-warning
-              'el-patch
-              (format "Definition of %S `%S' has changed, not unpatching"
-                      type name)))
-         (let ((current (nth 2 definition)))
-           (makunbound name)
-           (set name current)
-           (unless (get name :el-patch-value-original)
-             (put name :el-patch-value-original
-                  (el-patch--encode name 'value)))
-           (put name :el-patch-value-current current))))
-      ((quote define-minor-mode)
-       (cl-destructuring-bind (progn . body) (macroexpand-1 definition)
-         (dolist (form body)
-           (when (and (listp form)
-                      (member (car form)
-                              '(defcustom defun defvar)))
-             (el-patch--save-definition form restore)))))
-      ((quote defgroup))
-      (_ (error "Invalid definition type `%S'" type)))))
-
 (defun el-patch--definition (patch-definition)
   "Activate a PATCH-DEFINITION and update `el-patch--patches'.
 PATCH-DEFINITION is a list starting with `defun', `defmacro',
@@ -465,7 +335,8 @@ etc., which may contain patch directives."
       (unless (gethash name el-patch--patches)
         (puthash name (make-hash-table :test #'equal) el-patch--patches))
       (puthash type patch-definition (gethash name el-patch--patches))
-      (el-patch--save-definition definition))))
+      (let ((load-history nil))
+        (eval definition)))))
 
 ;;;###autoload
 (defmacro el-patch-defun (&rest args)
@@ -668,9 +539,10 @@ This restores the original functionality of the object being
 patched. PATCH-DEFINITION is as returned by
 `el-patch--select-patch'."
   (interactive (list (el-patch--select-patch)))
-  (let ((definition (el-patch--resolve-definition patch-definition t)))
-    (cl-destructuring-bind (type name . body) definition
-      (el-patch--save-definition definition 'restore)
+  (let ((old-definition (el-patch--resolve-definition patch-definition nil))
+        (new-definition (el-patch--resolve-definition patch-definition t)))
+    (cl-destructuring-bind (type name . body) new-definition
+      (eval old-definition)
       (remhash type (gethash name el-patch--patches)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
