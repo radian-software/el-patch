@@ -328,6 +328,59 @@ See `el-patch-validate'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Applying patches
 
+(defun el-patch--advice-mapc (f symbol)
+  "Apply F to every advice function in SYMBOL.
+FUN is called with three arguments: the symbol for the function
+that was added, the keyword identifying its place (`:before',
+`:around', etc.), and the properties alist that was specified
+when it was added.
+
+Advices are processed outermost to innermost.
+
+See also `advice-mapc'."
+  (let ((function-def (advice--symbol-function symbol)))
+    (while (advice--p function-def)
+      (let ((bytecode (aref (advice--cdr function-def) 1))
+            (where nil))
+        ;; Stole this from `advice--make-docstring':
+        (dolist (elem advice--where-alist)
+          (when (eq bytecode (cadr elem))
+            (setq where (car elem))))
+        (funcall f (advice--car function-def)
+                 where (advice--props function-def))
+        (setq function-def (advice--cdr function-def))))))
+
+(defmacro el-patch--without-advice (symbol &rest body)
+  "Remove the advice from SYMBOL, exec BODY, and restore it.
+The order and properties of the advice are preserved. SYMBOL
+should be quoted (i.e. it is evaluated to obtain the function
+name.) Return the value of the last expression in BODY."
+  (declare (indent 1))
+  ;; Emacs Lisp version of gensym.
+  (let ((the-symbol symbol)
+        (symbol (make-symbol "symbol"))
+        (advices (make-symbol "advices")))
+    `(let ((,symbol ,the-symbol)
+           (,advices nil))
+       ;; Record all the advices and their property lists.
+       (el-patch--advice-mapc
+        (lambda (func where props)
+          (push (list func where props) ,advices))
+        ',symbol)
+       ;; Remove all the advices.
+       (dolist (advice ,advices)
+         (advice-remove ,symbol (car advice)))
+       ;; Exec BODY and restore the advices.
+       (prog1 (progn ,@body)
+         ;; Note that this puts the advices back in the reverse order
+         ;; that we received them from `advice-function-mapc'. This is
+         ;; what we want because we get the advices from outermost to
+         ;; innermost, and we have to put them back from innermost to
+         ;; outermost.
+         (dolist (advice ,advices)
+           (cl-destructuring-bind (func where props) advice
+             (advice-add ,symbol where func props)))))))
+
 (defun el-patch--encode (symbol type)
   "Create an object that represents the state of SYMBOL.
 This will be nil if the SYMBOL is unbound, and a list containing
@@ -354,25 +407,26 @@ If RESTORE is non-nil, restores the original definition instead."
   (cl-destructuring-bind (type name . body) definition
     (pcase type
       ((or 'defun 'defmacro 'defsubst)
-       (if restore
-           (progn
-             (if (equal (get name :el-patch-function-current)
-                        (el-patch--encode name 'function))
-                 (let ((info (get name :el-patch-function)))
-                   (if (consp info)
-                       (fset name (car info))
-                     (fmakunbound name)))
-               (display-warning
-                'el-patch
-                (format "Definition of %S `%S' has changed, not unpatching"
-                        type name)))
-             (put name :el-patch-function-original nil))
-         (let ((current `(lambda ,@(cddr definition))))
-           (fset name current)
-           (unless (get name :el-patch-function-original)
-             (put name :el-patch-function-original
-                  (el-patch--encode name 'function)))
-           (put name :el-patch-function-current current))))
+       (el-patch--without-advice name
+         (if restore
+             (progn
+               (if (equal (get name :el-patch-function-current)
+                          (el-patch--encode name 'function))
+                   (let ((info (get name :el-patch-function)))
+                     (if (consp info)
+                         (fset name (car info))
+                       (fmakunbound name)))
+                 (display-warning
+                  'el-patch
+                  (format "Definition of %S `%S' has changed, not unpatching"
+                          type name)))
+               (put name :el-patch-function-original nil))
+           (let ((current `(lambda ,@(cddr definition))))
+             (fset name current)
+             (unless (get name :el-patch-function-original)
+               (put name :el-patch-function-original
+                    (el-patch--encode name 'function)))
+             (put name :el-patch-function-current current)))))
       ((or 'defvar 'defcustom)
        (if restore
            (if (equal (get name :el-patch-variable-current)
