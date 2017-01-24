@@ -2,17 +2,66 @@
 
 > Future-proof your Emacs Lisp customizations!
 
+## Table of contents
+
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->
+
+
+- [el-patch](#el-patch)
+    - [Table of contents](#table-of-contents)
+    - [TL;DR](#tldr)
+        - [How do I get it](#how-do-i-get-it)
+        - [What is it](#what-is-it)
+    - [Installation](#installation)
+    - [Why does it exist](#why-does-it-exist)
+    - [Basic usage](#basic-usage)
+    - [Patch directives](#patch-directives)
+    - [Defining patches](#defining-patches)
+    - [Inspecting patches](#inspecting-patches)
+    - [Validating patches](#validating-patches)
+    - [Removing patches](#removing-patches)
+    - [Lazy-loading packages](#lazy-loading-packages)
+        - [Validating patches that are not loaded yet](#validating-patches-that-are-not-loaded-yet)
+    - [But how does it work?](#but-how-does-it-work)
+    - [But how does it actually work?](#but-how-does-it-actually-work)
+    - [But does it actually work?](#but-does-it-actually-work)
+
+<!-- markdown-toc end -->
+
+
 ## TL;DR
 
 ### How do I get it
 
-Using [`straight.el`]:
+Using `straight.el` or `quelpa`, optionally with `quelpa-use-package`.
+See [Installation].
+
+### What is it
+
+Like the [advice] system, `el-patch` provides a way to customize the
+behavior of Emacs Lisp functions that do not provide enough variables
+and hooks to let you make them do what you want. The advantage of
+using `el-patch` is that you will be notified if the definition of a
+function you are customizing changes, so that you are aware your
+customizations might need to be updated.
+
+[advice]: https://www.gnu.org/software/emacs/manual/html_node/elisp/Advising-Functions.html
+
+Using the same mechanism, `el-patch` also provides [a way] to make
+lazy-loading packages much more easy, powerful, and robust.
+
+[a way]: #lazy-loading-packages
+
+## Installation
+
+Using [`straight.el`] with [`use-package`]:
 
     (use-package el-patch
       :recipe (:fetcher github
                :repo "raxod502/el-patch")
       :demand t)
 
+[`use-package`]: https://github.com/jwiegley/use-package
 [`straight.el`]: https://github.com/raxod502/straight.el
 
 Using [`quelpa-use-package`]:
@@ -22,6 +71,10 @@ Using [`quelpa-use-package`]:
       :demand t)
 
 [`quelpa-use-package`]: https://github.com/quelpa/quelpa-use-package
+
+Using [`straight.el`]:
+
+    (straight-use-package '(el-patch :fetcher github :repo "raxod502/el-patch"))
 
 Using [`quelpa`]:
 
@@ -40,22 +93,6 @@ Manually:
 `el-patch` is not [yet] hosted on MELPA.
 
 [yet]: https://github.com/melpa/melpa/pull/4512
-
-### What is it
-
-Like the [advice] system, `el-patch` provides a way to customize the
-behavior of Emacs Lisp functions that do not provide enough variables
-and hooks to let you make them do what you want. The advantage of
-using `el-patch` is that you will be notified if the definition of a
-function you are customizing changes, so that you are aware your
-customizations might need to be updated.
-
-[advice]: https://www.gnu.org/software/emacs/manual/html_node/elisp/Advising-Functions.html
-
-Using the same mechanism, `el-patch` also provides [a way] to make
-lazy-loading packages much more easy, powerful, and robust.
-
-[a way]: #lazy-loading-packages
 
 ## Why does it exist
 
