@@ -56,46 +56,48 @@ lazy-loading packages much more easy, powerful, and robust.
 
 ## Installation
 
-Using [`straight.el`] with [`use-package`]:
+`el-patch` is available on MELPA.
+
+Install using [`straight.el`] with [`use-package`]:
+
+    (use-package el-patch)
+
+
+Install using [`package.el`] with [`use-package`]:
 
     (use-package el-patch
-      :recipe (:fetcher github
-               :repo "raxod502/el-patch")
-      :demand t)
+      :ensure t)
 
-[`use-package`]: https://github.com/jwiegley/use-package
-[`straight.el`]: https://github.com/raxod502/straight.el
-
-Using [`quelpa-use-package`]:
+Install using [`quelpa`] with [`use-package`] via [`quelpa-use-package`]:
 
     (use-package el-patch
-      :quelpa (el-patch :fetcher github :repo "raxod502/el-patch")
-      :demand t)
+      :quelpa t)
 
-[`quelpa-use-package`]: https://github.com/quelpa/quelpa-use-package
+Install using plain [`straight.el`]:
 
-Using [`straight.el`]:
+    (straight-use-package 'el-patch)
 
-    (straight-use-package '(el-patch :fetcher github :repo "raxod502/el-patch"))
-    (require 'el-patch)
+Install using plain [`package.el`]:
 
-Using [`quelpa`]:
+    (unless (package-installed-p 'el-patch)
+      (package-install 'el-patch))
 
-    (quelpa '(el-patch :fetcher github :repo "raxod502/el-patch"))
-    (require 'el-patch)
+Install using plain [`quelpa`]:
 
-[`quelpa`]: https://github.com/quelpa/quelpa
+    (quelpa 'el-patch)
 
-Manually:
+Install manually:
 
     $ git clone https://github.com/raxod502/el-patch.git
 
     (add-to-list 'load-path "/path/to/el-patch")
     (require 'el-patch)
 
-`el-patch` is not [yet] hosted on MELPA.
-
-[yet]: https://github.com/melpa/melpa/pull/4512
+[`straight.el`]: https://github.com/raxod502/straight.el
+[`use-package`]: https://github.com/jwiegley/use-package
+[`package.el`]: https://www.gnu.org/software/emacs/manual/html_node/emacs/Packages.html
+[`quelpa-use-package`]: https://github.com/quelpa/quelpa-use-package
+[`quelpa`]: https://github.com/quelpa/quelpa
 
 ## Why does it exist
 
