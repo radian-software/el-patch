@@ -401,7 +401,7 @@ definitions to your init-file before the call to `ivy-mode`, replacing
 `defvar` with `el-patch-defvar` and replacing `define-minor-mode` with
 `el-patch-define-minor-mode`.
 
-### Validating patches that are not loaded yet
+## Validating patches that are not loaded yet
 
 If you want to define a patch for a function provided by an unloaded
 feature, it is likely that you will just put the patch in a
