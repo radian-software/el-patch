@@ -36,6 +36,8 @@
 Using `straight.el` or `quelpa`, optionally with `quelpa-use-package`.
 See [Installation].
 
+[installation]: #installation
+
 ### What is it
 
 Like the [advice] system, `el-patch` provides a way to customize the
