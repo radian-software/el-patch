@@ -77,6 +77,7 @@ Using [`quelpa-use-package`]:
 Using [`straight.el`]:
 
     (straight-use-package '(el-patch :fetcher github :repo "raxod502/el-patch"))
+    (require 'el-patch)
 
 Using [`quelpa`]:
 
