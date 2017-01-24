@@ -21,7 +21,7 @@
     - [Validating patches](#validating-patches)
     - [Removing patches](#removing-patches)
     - [Lazy-loading packages](#lazy-loading-packages)
-        - [Validating patches that are not loaded yet](#validating-patches-that-are-not-loaded-yet)
+    - [Validating patches that are not loaded yet](#validating-patches-that-are-not-loaded-yet)
     - [But how does it work?](#but-how-does-it-work)
     - [But how does it actually work?](#but-how-does-it-actually-work)
     - [But does it actually work?](#but-does-it-actually-work)
