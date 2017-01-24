@@ -185,9 +185,10 @@ PATCH-DEFINITION is a list starting with `defun', `defmacro',
 etc. Return a list of the same format. Resolve in favor of the
 original version if NEW is nil; otherwise resolve in favor of the
 new version."
-  (cl-mapcan (lambda (form)
-               (el-patch--resolve form new))
-             patch-definition))
+  (cons (car patch-definition)
+        (cl-mapcan (lambda (form)
+                     (el-patch--resolve form new))
+                   (cdr patch-definition))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Validating patches
@@ -270,9 +271,9 @@ See also `el-patch-validate-all'."
   (unwind-protect
       (progn
         (let* ((type (car patch-definition))
-               (name (cadr patch-definition))
                (expected-definition (el-patch--resolve-definition
                                      patch-definition nil))
+               (name (cadr expected-definition))
                (actual-definition (el-patch--find-function name)))
           (cond
            ((not actual-definition)
@@ -593,9 +594,9 @@ This is a diff between the expected and actual values of a
 patch's original definition. PATCH-DEFINITION is as returned by
 `el-patch--select-patch'."
   (interactive (list (el-patch--select-patch)))
-  (let* ((name (cadr patch-definition))
-         (expected-definition (el-patch--resolve-definition
+  (let* ((expected-definition (el-patch--resolve-definition
                                patch-definition nil))
+         (name (cadr expected-definition))
          (actual-definition (el-patch--find-function name)))
     (el-patch--ediff-forms
      "*el-patch actual*" actual-definition
