@@ -212,23 +212,33 @@ be defined permanently.")
 Return nil if such a definition cannot be found. (That would
 happen if the definition were generated dynamically.)"
   (when (fboundp name)
-    (let* ((buffer-point (ignore-errors
+    (let* (;; Since Emacs actually opens the source file in a (hidden)
+           ;; buffer, it can try to apply local variables, which might
+           ;; result in an annoying interactive prompt. Let's disable
+           ;; that.
+           (enable-local-variables nil)
+           (enable-dir-local-variables nil)
+           ;; This is supposed to be noninteractive so we also
+           ;; suppress all the messages.
+           (inhibit-message t)
+           (message-log-max nil)
+           ;; Now we actually do the find-function operation.
+           (buffer-point (ignore-errors
                            ;; Just in case we get an error because the
                            ;; function is defined in the C code, we
                            ;; ignore it and return nil.
                            (save-excursion
-                             ;; This horrifying bit of hackery
-                             ;; prevents `find-function-noselect' from
+                             ;; This horrifying bit of hackery on
+                             ;; `get-file-buffer' prevents
+                             ;; `find-function-noselect' from
                              ;; returning an existing buffer, so that
                              ;; later on when we jump to the
                              ;; definition, we don't temporarily
                              ;; scroll the window if the definition
                              ;; happens to be in the *current* buffer.
-                             (prog2
-                                 (advice-add #'get-file-buffer :override
-                                             #'ignore)
-                                 (find-function-noselect name 'lisp-only)
-                               (advice-remove #'get-file-buffer #'ignore)))))
+                             (cl-letf (((symbol-function #'get-file-buffer)
+                                        (symbol-function #'ignore)))
+                               (find-function-noselect name 'lisp-only)))))
            (defun-buffer (car buffer-point))
            (defun-point (cdr buffer-point)))
       (and defun-buffer
