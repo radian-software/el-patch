@@ -57,16 +57,14 @@
 The keys are symbols naming the objects that have been patched.
 The values are hash tables mapping definition types (symbols
 `defun', `defmacro', etc.) to patch definitions, which are lists
-beginning with `defun', `defmacro', etc.")
+beginning with `defun', `defmacro', etc.
+
+Note that the symbols are from the versions of patches that have
+been resolved in favor of the modified version, when a patch
+renames a symbol.")
 
 (defvar el-patch--not-present 'key-is-not-present-in-hash-table
   "Value used as a default argument to `gethash'.")
-
-(defvar el-patch--features nil
-  "List of features that have been declared to contain patches.
-All of these features will be loaded when you call
-`el-patch-validate-all', or when you call `el-patch-validate'
-with a prefix argument.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Resolving patches
@@ -199,6 +197,7 @@ their bindings."
                (error "Not enough arguments (%d) for `el-patch-literal'"
                       (1- (length form))))
              (cdr form))
+            ((quote el-patch-feature))
             (_ (list (cl-mapcan resolve form)))))
       (or (gethash form table)
           (list form)))))
@@ -209,9 +208,10 @@ PATCH-DEFINITION is a list starting with `defun', `defmacro',
 etc. Return a list of the same format. Resolve in favor of the
 original version if NEW is nil; otherwise resolve in favor of the
 new version."
-  (cl-mapcan (lambda (form)
-               (el-patch--resolve form new))
-             patch-definition))
+  (cons (car patch-definition)
+        (cl-mapcan (lambda (form)
+                     (el-patch--resolve form new))
+                   (cdr patch-definition))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Validating patches
@@ -236,23 +236,33 @@ be defined permanently.")
 Return nil if such a definition cannot be found. (That would
 happen if the definition were generated dynamically.)"
   (when (fboundp name)
-    (let* ((buffer-point (ignore-errors
+    (let* (;; Since Emacs actually opens the source file in a (hidden)
+           ;; buffer, it can try to apply local variables, which might
+           ;; result in an annoying interactive prompt. Let's disable
+           ;; that.
+           (enable-local-variables nil)
+           (enable-dir-local-variables nil)
+           ;; This is supposed to be noninteractive so we also
+           ;; suppress all the messages.
+           (inhibit-message t)
+           (message-log-max nil)
+           ;; Now we actually do the find-function operation.
+           (buffer-point (ignore-errors
                            ;; Just in case we get an error because the
                            ;; function is defined in the C code, we
                            ;; ignore it and return nil.
                            (save-excursion
-                             ;; This horrifying bit of hackery
-                             ;; prevents `find-function-noselect' from
+                             ;; This horrifying bit of hackery on
+                             ;; `get-file-buffer' prevents
+                             ;; `find-function-noselect' from
                              ;; returning an existing buffer, so that
                              ;; later on when we jump to the
                              ;; definition, we don't temporarily
                              ;; scroll the window if the definition
                              ;; happens to be in the *current* buffer.
-                             (prog2
-                                 (advice-add #'get-file-buffer :override
-                                             #'ignore)
-                                 (find-function-noselect name 'lisp-only)
-                               (advice-remove #'get-file-buffer #'ignore)))))
+                             (cl-letf (((symbol-function #'get-file-buffer)
+                                        (symbol-function #'ignore)))
+                               (find-function-noselect name 'lisp-only)))))
            (defun-buffer (car buffer-point))
            (defun-point (cdr buffer-point)))
       (and defun-buffer
@@ -294,9 +304,9 @@ See also `el-patch-validate-all'."
   (unwind-protect
       (progn
         (let* ((type (car patch-definition))
-               (name (cadr patch-definition))
                (expected-definition (el-patch--resolve-definition
                                      patch-definition nil))
+               (name (cadr expected-definition))
                (actual-definition (el-patch--find-function name)))
           (cond
            ((not actual-definition)
@@ -351,90 +361,49 @@ See `el-patch-validate'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Applying patches
 
-(defun el-patch--encode (symbol type)
-  "Create an object that represents the state of SYMBOL.
-This will be nil if the SYMBOL is unbound, and a list containing
-its value as a single element otherwise. If TYPE is `function'
-then the symbol's function cell is used; if TYPE is `value' then
-the symbol's value cell is used."
-  (pcase type
-    ('function
-     (when (fboundp symbol)
-       (list (symbol-function symbol))))
-    ('value
-     (when (boundp symbol)
-       (list (symbol-value symbol))))
-    (_ (error "Invalid type `%S'" type))))
-
-(defun el-patch--save-definition (definition &optional restore)
-  "Apply a definition.
-This overwrites the original function or variable definition,
-saving it to the symbol's property list. DEFINITION is a list
-starting with `defun', `defmacro', etc., which may not contain
-patch directives.
-
-If RESTORE is non-nil, restores the original definition instead."
+(defun el-patch--compute-load-history-items (definition)
+  "Determine the items that DEFINITION will add to the `load-history'.
+Return a list of those items. Beware, uses heuristics."
   (cl-destructuring-bind (type name . body) definition
     (pcase type
       ((or 'defun 'defmacro 'defsubst)
-       (if restore
-           (progn
-             (if (equal (get name :el-patch-function-current)
-                        (el-patch--encode name 'function))
-                 (let ((info (get name :el-patch-function)))
-                   (if (consp info)
-                       (fset name (car info))
-                     (fmakunbound name)))
-               (display-warning
-                'el-patch
-                (format "Definition of %S `%S' has changed, not unpatching"
-                        type name)))
-             (put name :el-patch-function-original nil))
-         (let ((current `(lambda ,@(cddr definition))))
-           (fset name current)
-           (unless (get name :el-patch-function-original)
-             (put name :el-patch-function-original
-                  (el-patch--encode name 'function)))
-           (put name :el-patch-function-current current))))
+       (list (cons 'defun name)))
       ((or 'defvar 'defcustom)
-       (if restore
-           (if (equal (get name :el-patch-variable-current)
-                      (el-patch--encode name 'value))
-               (let ((info (get name :el-patch-variable)))
-                 (if (consp info)
-                     (setq name (car info))
-                   (makunbound name)))
-             (display-warning
-              'el-patch
-              (format "Definition of %S `%S' has changed, not unpatching"
-                      type name)))
-         (let ((current (nth 2 definition)))
-           (makunbound name)
-           (set name current)
-           (unless (get name :el-patch-value-original)
-             (put name :el-patch-value-original
-                  (el-patch--encode name 'value)))
-           (put name :el-patch-value-current current))))
+       (list name))
       ((quote define-minor-mode)
-       (cl-destructuring-bind (progn . body) (macroexpand-1 definition)
-         (dolist (form body)
-           (when (and (listp form)
-                      (member (car form)
-                              '(defcustom defun defvar)))
-             (el-patch--save-definition form restore)))))
-      ((quote defgroup))
-      (_ (error "Invalid definition type `%S'" type)))))
+       (list (cons 'defun name)
+             (or (when-let ((rest (member :variable body)))
+                   (cadr rest))
+                 name)))
+      ((quote defgroup)))))
+
+(defun el-patch--stealthy-eval (definition)
+  "Evaluate DEFINITION without updating `load-history'.
+DEFINITION should be a list beginning with `defun', `defmacro',
+`define-minor-mode', etc."
+  (eval definition)
+  (dolist (item (el-patch--compute-load-history-items
+                 definition))
+    (setq current-load-list (remove item current-load-list))))
 
 (defun el-patch--definition (patch-definition)
   "Activate a PATCH-DEFINITION and update `el-patch--patches'.
 PATCH-DEFINITION is a list starting with `defun', `defmacro',
 etc., which may contain patch directives."
+  ;; First we resolve the patch definition in favor of the modified
+  ;; version, because that is the version we need to activate (no
+  ;; validation happens here).
   (let ((definition (el-patch--resolve-definition patch-definition t)))
+    ;; Then we parse out the definition type and symbol name.
     (cl-destructuring-bind (type name . body) definition
+      ;; Register the patch in our hash. We want to do this right away
+      ;; so that if there is an error then at least the user can undo
+      ;; the patch (as long as it is not too terribly wrong).
       (unless (gethash name el-patch--patches)
         (puthash name (make-hash-table :test #'equal) el-patch--patches))
       (puthash type patch-definition (gethash name el-patch--patches))
-      (el-patch--save-definition definition))))
+      ;; Now we actually overwrite the current definition.
+      (el-patch--stealthy-eval definition))))
 
 ;;;###autoload
 (defmacro el-patch-defun (&rest args)
@@ -456,6 +425,23 @@ etc., which may contain patch directives."
   (declare (doc-string 3)
            (indent defun))
   `(el-patch--definition ',(cons #'defsubst args)))
+
+;;;###autoload
+(defmacro el-patch-defvar (&rest args)
+  "Patch a variable. The ARGS are the same as for `defvar'."
+  (declare (indent defun))
+  `(el-patch--definition ',(cons #'defvar args)))
+
+;;;###autoload
+(defmacro el-patch-defgroup (&rest args)
+  "Patch a customization group. The ARGS are the same as for `defgroup'."
+  (declare (indent defun))
+  `(el-patch--definition ',(cons #'defgroup args)))
+
+(defmacro el-patch-defcustom (&rest args)
+  "Patch a customizable variable. The ARGS are the same as for `defcustom'."
+  (declare (indent defun))
+  `(el-patch--definition ',(cons #'defcustom args)))
 
 ;;;###autoload
 (defmacro el-patch-define-minor-mode (&rest args)
@@ -542,33 +528,50 @@ Resolves to ARG, which is not processed further by el-patch."
   (declare (indent 0))
   `(error "Can't use `el-patch-literal' outside of an `el-patch'"))
 
+;;;###autoload
+(defmacro el-patch-feature (feature)
+  "Deprecated no-op for backwards compatibility."
+  (declare (indent 0)
+           (obsolete "el-patch-feature is no longer necessary" "1.1")))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Viewing patches
 
+;;;###autoload
+(defun el-patch-get (name type)
+  "Return the patch for object NAME of the given TYPE.
+NAME is a symbol for the name of the definition that was patched,
+and TYPE is a symbol `defun', `defmacro', etc. If the patch could
+not be found, return nil."
+  (condition-case nil
+      (gethash type (gethash name el-patch--patches))
+    (error nil)))
+
 (defun el-patch--select-patch ()
   "Use `completing-read' to select a patched function.
-Return the patch definition, a list beginning with `defun',
-`defmacro', etc."
+Return a list of two elements, the name (a symbol `defun',
+`defmacro', etc.) of the object being patched and the type (a
+symbol) of the definition."
   (let ((options (mapcar #'symbol-name (hash-table-keys el-patch--patches))))
     (unless options
       (user-error "No patches defined"))
-    (let* ((patch-hash (gethash (intern (completing-read
-                                         "Which patch? "
-                                         options
-                                         (lambda (elt) t)
-                                         'require-match))
-                                el-patch--patches))
+    (let* ((name (intern (completing-read
+                          "Which patch? "
+                          options
+                          (lambda (elt) t)
+                          'require-match)))
+           (patch-hash (gethash name el-patch--patches))
            (options (mapcar #'symbol-name
-                            (hash-table-keys el-patch--patches))))
-      (gethash (intern (pcase (length options)
-                         (0 (error "Internal `el-patch' error"))
-                         (1 (car options))
-                         (_ (completing-read
-                             "Which version? "
-                             options
-                             (lambda (elt) t)
-                             'require-match))))
-               patch-hash))))
+                            (hash-table-keys patch-hash))))
+      (list name
+            (intern (pcase (length options)
+                      (0 (error "Internal `el-patch' error"))
+                      (1 (car options))
+                      (_ (completing-read
+                          "Which version? "
+                          options
+                          (lambda (elt) t)
+                          'require-match))))))))
 
 (defun el-patch--ediff-forms (name1 form1 name2 form2)
   "Ediff two forms.
@@ -596,51 +599,54 @@ two buffers wordwise."
      nil 'ediff-regions-wordwise 'word-mode nil)))
 
 ;;;###autoload
-(defun el-patch-ediff-patch (patch-definition)
+(defun el-patch-ediff-patch (name type)
   "Show the patch for an object in Ediff.
-PATCH-DEFINITION is as returned by `el-patch--select-patch'."
-  (interactive (list (el-patch--select-patch)))
-  (let ((old-definition (el-patch--resolve-definition
-                         patch-definition nil))
-        (new-definition (el-patch--resolve-definition
-                         patch-definition t)))
-    (el-patch--ediff-forms
-     "*el-patch original*" old-definition
-     "*el-patch patched*" new-definition)
-    (when (equal old-definition new-definition)
-      (message "No patch"))))
+NAME and TYPE are as returned by `el-patch-get'."
+  (interactive (el-patch--select-patch))
+  (if-let ((patch-definition (el-patch-get name type)))
+      (let* ((old-definition (el-patch--resolve-definition
+                              patch-definition nil))
+             (new-definition (el-patch--resolve-definition
+                              patch-definition t)))
+        (el-patch--ediff-forms
+         "*el-patch original*" old-definition
+         "*el-patch patched*" new-definition)
+        (when (equal old-definition new-definition)
+          (message "No patch")))
+    (error "There is no patch for %S %S" type name)))
 
 ;;;###autoload
-(defun el-patch-ediff-conflict (patch-definition)
+(defun el-patch-ediff-conflict (name type)
   "Show a patch conflict in Ediff.
 This is a diff between the expected and actual values of a
-patch's original definition. PATCH-DEFINITION is as returned by
-`el-patch--select-patch'."
-  (interactive (list (el-patch--select-patch)))
-  (let* ((name (cadr patch-definition))
-         (expected-definition (el-patch--resolve-definition
-                               patch-definition nil))
-         (actual-definition (el-patch--find-function name)))
-    (el-patch--ediff-forms
-     "*el-patch actual*" actual-definition
-     "*el-patch expected*" expected-definition)
-    (when (equal actual-definition expected-definition)
-      (message "No conflict"))))
+patch's original definition. NAME and TYPE are as returned by
+`el-patch-get'."
+  (interactive (el-patch--select-patch))
+  (if-let ((patch-definition (el-patch-get name type)))
+      (let* ((expected-definition (el-patch--resolve-definition
+                                   patch-definition nil))
+             (name (cadr expected-definition))
+             (actual-definition (el-patch--find-function name)))
+        (el-patch--ediff-forms
+         "*el-patch actual*" actual-definition
+         "*el-patch expected*" expected-definition)
+        (when (equal actual-definition expected-definition)
+          (message "No conflict")))
+    (error "There is no patch for %S %S" type name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Removing patches
 
 ;;;###autoload
-(defun el-patch-unpatch (patch-definition)
+(defun el-patch-unpatch (name type)
   "Remove the patch given by the PATCH-DEFINITION.
 This restores the original functionality of the object being
-patched. PATCH-DEFINITION is as returned by
-`el-patch--select-patch'."
-  (interactive (list (el-patch--select-patch)))
-  (let ((definition (el-patch--resolve-definition patch-definition t)))
-    (cl-destructuring-bind (type name . body) definition
-      (el-patch--save-definition definition 'restore)
-      (remhash type (gethash name el-patch--patches)))))
+patched. NAME and TYPE are as returned by `el-patch-get'."
+  (interactive (el-patch--select-patch))
+  (if-let ((patch-definition (el-patch-get name type)))
+      (el-patch--stealthy-eval (el-patch--resolve-definition
+                                patch-definition nil))
+    (error "There is no patch for %S %S" type name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Closing remarks

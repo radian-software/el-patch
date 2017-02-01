@@ -432,21 +432,16 @@ Magic.
 ## But how does it actually work?
 
 The basic idea is simple. When a patch is defined, the patch
-definition is resolved to figure out the modified definition is. The
-actual definition (as determined by [`symbol-value` or
-`symbol-function`]) is saved in the [symbol plist], and it is
-overridden using `set` or `fset`. When you call `M-x
-el-patch-unpatch`, the original definition is restored.
+definition is resolved to figure out the modified definition is. Then
+that definition is installed using `set` or `fset`. The patch
+definition is also recorded in the hash `el-patch--patches`. This
+allows for the functionality of `M-x el-patch-ediff-patch`. Obtaining
+the actual original definition of a function is done using a modified
+version of `find-function-noselect`, which provides for `M-x
+el-patch-validate` and `M-x el-patch-ediff-conflict`.
 
-[`symbol-value` or `symbol-function`]: https://www.gnu.org/software/emacs/manual/html_node/elisp/Symbol-Components.html
-[symbol plist]: https://www.gnu.org/software/emacs/manual/html_node/elisp/Symbol-Plists.html
-
-Whenever a patch is defined, it's also recorded in the hash
-`el-patch--patches`, which allows for the functionality of `M-x
-el-patch-ediff-patch`. Obtaining the actual original definition of a
-function is done using a modified version of `find-function-noselect`,
-which provides for `M-x el-patch-validate` and `M-x
-el-patch-ediff-conflict`.
+When you call `M-x el-patch-unpatch`, the patch definition is resolved
+again and the original version is installed using `set` or `fset`.
 
 ## But does it actually work?
 
