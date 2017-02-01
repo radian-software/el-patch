@@ -20,7 +20,7 @@ The format is based on [Keep a Changelog].
 ### Changed
 * It is no longer necessary to specify `el-patch-feature` due to
   improvements in the `el-patch` patching mechanism.
-* The functions `el-patch-ediff-patch` `el-patch-ediff-conflict`, and
+* The functions `el-patch-ediff-patch`, `el-patch-ediff-conflict`, and
   `el-patch-unpatch` now take an object name and definition type
   rather than a patch definition (or function name in the case of
   `el-patch-unpatch`). Interactive usage has not changed.
