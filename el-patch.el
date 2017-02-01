@@ -326,17 +326,49 @@ See `el-patch-validate'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Applying patches
 
+(defun el-patch--compute-load-history-items (definition)
+  "Determine the items that DEFINITION will add to the `load-history'.
+Return a list of those items. Beware, uses heuristics."
+  (cl-destructuring-bind (type name . body) definition
+    (pcase type
+      ((or 'defun 'defmacro 'defsubst)
+       (list (cons 'defun name)))
+      ((or 'defvar 'defcustom)
+       (list name))
+      ((quote define-minor-mode)
+       (list (cons 'defun name)
+             (or (when-let ((rest (member :variable body)))
+                   (cadr rest))
+                 name)))
+      ((quote defgroup)))))
+
+(defun el-patch--stealthy-eval (definition)
+  "Evaluate DEFINITION without updating `load-history'.
+DEFINITION should be a list beginning with `defun', `defmacro',
+`define-minor-mode', etc."
+  (eval definition)
+  (dolist (item (el-patch--compute-load-history-items
+                 definition))
+    (setq current-load-list (remove item current-load-list))))
+
 (defun el-patch--definition (patch-definition)
   "Activate a PATCH-DEFINITION and update `el-patch--patches'.
 PATCH-DEFINITION is a list starting with `defun', `defmacro',
 etc., which may contain patch directives."
+  ;; First we resolve the patch definition in favor of the modified
+  ;; version, because that is the version we need to activate (no
+  ;; validation happens here).
   (let ((definition (el-patch--resolve-definition patch-definition t)))
+    ;; Then we parse out the definition type and symbol name.
     (cl-destructuring-bind (type name . body) definition
+      ;; Register the patch in our hash. We want to do this right away
+      ;; so that if there is an error then at least the user can undo
+      ;; the patch (as long as it is not too terribly wrong).
       (unless (gethash name el-patch--patches)
         (puthash name (make-hash-table :test #'equal) el-patch--patches))
       (puthash type patch-definition (gethash name el-patch--patches))
-      (let ((load-history nil))
-        (eval definition)))))
+      ;; Now we actually overwrite the current definition.
+      (el-patch--stealthy-eval definition))))
 
 ;;;###autoload
 (defmacro el-patch-defun (&rest args)
@@ -358,6 +390,23 @@ etc., which may contain patch directives."
   (declare (doc-string 3)
            (indent defun))
   `(el-patch--definition ',(cons #'defsubst args)))
+
+;;;###autoload
+(defmacro el-patch-defvar (&rest args)
+  "Patch a variable. The ARGS are the same as for `defvar'."
+  (declare (indent defun))
+  `(el-patch--definition ',(cons #'defvar args)))
+
+;;;###autoload
+(defmacro el-patch-defgroup (&rest args)
+  "Patch a customization group. The ARGS are the same as for `defgroup'."
+  (declare (indent defun))
+  `(el-patch--definition ',(cons #'defgroup args)))
+
+(defmacro el-patch-defcustom (&rest args)
+  "Patch a customizable variable. The ARGS are the same as for `defcustom'."
+  (declare (indent defun))
+  `(el-patch--definition ',(cons #'defcustom args)))
 
 ;;;###autoload
 (defmacro el-patch-define-minor-mode (&rest args)
@@ -454,7 +503,7 @@ NAME is a symbol for the name of the definition that was patched,
 and TYPE is a symbol `defun', `defmacro', etc. If the patch could
 not be found, return nil."
   (condition-case nil
-      (gethash type (gethash name name el-patch--patches))
+      (gethash type (gethash name el-patch--patches))
     (error nil)))
 
 (defun el-patch--select-patch ()
@@ -513,16 +562,17 @@ two buffers wordwise."
   "Show the patch for an object in Ediff.
 NAME and TYPE are as returned by `el-patch-get'."
   (interactive (el-patch--select-patch))
-  (let* ((patch-definition (el-patch-get name type))
-         (old-definition (el-patch--resolve-definition
-                          patch-definition nil))
-         (new-definition (el-patch--resolve-definition
-                          patch-definition t)))
-    (el-patch--ediff-forms
-     "*el-patch original*" old-definition
-     "*el-patch patched*" new-definition)
-    (when (equal old-definition new-definition)
-      (message "No patch"))))
+  (if-let ((patch-definition (el-patch-get name type)))
+      (let* ((old-definition (el-patch--resolve-definition
+                              patch-definition nil))
+             (new-definition (el-patch--resolve-definition
+                              patch-definition t)))
+        (el-patch--ediff-forms
+         "*el-patch original*" old-definition
+         "*el-patch patched*" new-definition)
+        (when (equal old-definition new-definition)
+          (message "No patch")))
+    (error "There is no patch for %S %S" type name)))
 
 ;;;###autoload
 (defun el-patch-ediff-conflict (name type)
@@ -531,16 +581,17 @@ This is a diff between the expected and actual values of a
 patch's original definition. NAME and TYPE are as returned by
 `el-patch-get'."
   (interactive (el-patch--select-patch))
-  (let* ((patch-definition (el-patch-get name type))
-         (expected-definition (el-patch--resolve-definition
-                               patch-definition nil))
-         (name (cadr expected-definition))
-         (actual-definition (el-patch--find-function name)))
-    (el-patch--ediff-forms
-     "*el-patch actual*" actual-definition
-     "*el-patch expected*" expected-definition)
-    (when (equal actual-definition expected-definition)
-      (message "No conflict"))))
+  (if-let ((patch-definition (el-patch-get name type)))
+      (let* ((expected-definition (el-patch--resolve-definition
+                                   patch-definition nil))
+             (name (cadr expected-definition))
+             (actual-definition (el-patch--find-function name)))
+        (el-patch--ediff-forms
+         "*el-patch actual*" actual-definition
+         "*el-patch expected*" expected-definition)
+        (when (equal actual-definition expected-definition)
+          (message "No conflict")))
+    (error "There is no patch for %S %S" type name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Removing patches
@@ -551,8 +602,10 @@ patch's original definition. NAME and TYPE are as returned by
 This restores the original functionality of the object being
 patched. NAME and TYPE are as returned by `el-patch-get'."
   (interactive (el-patch--select-patch))
-  (eval (el-patch--resolve-definition
-         (el-patch-get name type) nil)))
+  (if-let ((patch-definition (el-patch-get name type)))
+      (el-patch--stealthy-eval (el-patch--resolve-definition
+                                patch-definition nil))
+    (error "There is no patch for %S %S" type name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Closing remarks
