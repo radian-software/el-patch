@@ -447,30 +447,41 @@ Resolves to ARG, which is not processed further by el-patch."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Viewing patches
 
+;;;###autoload
+(defun el-patch-get (name type)
+  "Return the patch for object NAME of the given TYPE.
+NAME is a symbol for the name of the definition that was patched,
+and TYPE is a symbol `defun', `defmacro', etc. If the patch could
+not be found, return nil."
+  (condition-case nil
+      (gethash type (gethash name name el-patch--patches))
+    (error nil)))
+
 (defun el-patch--select-patch ()
   "Use `completing-read' to select a patched function.
-Return the patch definition, a list beginning with `defun',
-`defmacro', etc."
+Return a list of two elements, the name (a symbol `defun',
+`defmacro', etc.) of the object being patched and the type (a
+symbol) of the definition."
   (let ((options (mapcar #'symbol-name (hash-table-keys el-patch--patches))))
     (unless options
       (user-error "No patches defined"))
-    (let* ((patch-hash (gethash (intern (completing-read
-                                         "Which patch? "
-                                         options
-                                         (lambda (elt) t)
-                                         'require-match))
-                                el-patch--patches))
+    (let* ((name (intern (completing-read
+                          "Which patch? "
+                          options
+                          (lambda (elt) t)
+                          'require-match)))
+           (patch-hash (gethash name el-patch--patches))
            (options (mapcar #'symbol-name
-                            (hash-table-keys el-patch--patches))))
-      (gethash (intern (pcase (length options)
-                         (0 (error "Internal `el-patch' error"))
-                         (1 (car options))
-                         (_ (completing-read
-                             "Which version? "
-                             options
-                             (lambda (elt) t)
-                             'require-match))))
-               patch-hash))))
+                            (hash-table-keys patch-hash))))
+      (list name
+            (intern (pcase (length options)
+                      (0 (error "Internal `el-patch' error"))
+                      (1 (car options))
+                      (_ (completing-read
+                          "Which version? "
+                          options
+                          (lambda (elt) t)
+                          'require-match))))))))
 
 (defun el-patch--ediff-forms (name1 form1 name2 form2)
   "Ediff two forms.
@@ -498,14 +509,15 @@ two buffers wordwise."
      nil 'ediff-regions-wordwise 'word-mode nil)))
 
 ;;;###autoload
-(defun el-patch-ediff-patch (patch-definition)
+(defun el-patch-ediff-patch (name type)
   "Show the patch for an object in Ediff.
-PATCH-DEFINITION is as returned by `el-patch--select-patch'."
-  (interactive (list (el-patch--select-patch)))
-  (let ((old-definition (el-patch--resolve-definition
-                         patch-definition nil))
-        (new-definition (el-patch--resolve-definition
-                         patch-definition t)))
+NAME and TYPE are as returned by `el-patch-get'."
+  (interactive (el-patch--select-patch))
+  (let* ((patch-definition (el-patch-get name type))
+         (old-definition (el-patch--resolve-definition
+                          patch-definition nil))
+         (new-definition (el-patch--resolve-definition
+                          patch-definition t)))
     (el-patch--ediff-forms
      "*el-patch original*" old-definition
      "*el-patch patched*" new-definition)
@@ -513,13 +525,14 @@ PATCH-DEFINITION is as returned by `el-patch--select-patch'."
       (message "No patch"))))
 
 ;;;###autoload
-(defun el-patch-ediff-conflict (patch-definition)
+(defun el-patch-ediff-conflict (name type)
   "Show a patch conflict in Ediff.
 This is a diff between the expected and actual values of a
-patch's original definition. PATCH-DEFINITION is as returned by
-`el-patch--select-patch'."
-  (interactive (list (el-patch--select-patch)))
-  (let* ((expected-definition (el-patch--resolve-definition
+patch's original definition. NAME and TYPE are as returned by
+`el-patch-get'."
+  (interactive (el-patch--select-patch))
+  (let* ((patch-definition (el-patch-get name type))
+         (expected-definition (el-patch--resolve-definition
                                patch-definition nil))
          (name (cadr expected-definition))
          (actual-definition (el-patch--find-function name)))
@@ -533,17 +546,13 @@ patch's original definition. PATCH-DEFINITION is as returned by
 ;;;; Removing patches
 
 ;;;###autoload
-(defun el-patch-unpatch (patch-definition)
+(defun el-patch-unpatch (name type)
   "Remove the patch given by the PATCH-DEFINITION.
 This restores the original functionality of the object being
-patched. PATCH-DEFINITION is as returned by
-`el-patch--select-patch'."
-  (interactive (list (el-patch--select-patch)))
-  (let ((old-definition (el-patch--resolve-definition patch-definition nil))
-        (new-definition (el-patch--resolve-definition patch-definition t)))
-    (cl-destructuring-bind (type name . body) new-definition
-      (eval old-definition)
-      (remhash type (gethash name el-patch--patches)))))
+patched. NAME and TYPE are as returned by `el-patch-get'."
+  (interactive (el-patch--select-patch))
+  (eval (el-patch--resolve-definition
+         (el-patch-get name type) nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Closing remarks
