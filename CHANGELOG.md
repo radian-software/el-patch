@@ -14,8 +14,11 @@ The format is based on [Keep a Changelog].
   * `el-patch-define-minor-mode`
 * New function `el-patch-get` to get a patch definition by name.
 * Objects can now be renamed in a patch using `el-patch-swap` on the
-  name.
-* MIT license.
+  name ([#4](https://github.com/raxod502/el-patch/issues/4)).
+* Actual description in the Commentary section of `el-patch.el`
+  ([#5](https://github.com/raxod502/el-patch/issues/5)).
+* MIT license
+  ([melpa/melpa#4512](https://github.com/melpa/melpa/pull/4512#issuecomment-274682089)).
 
 ### Changed
 * It is no longer necessary to specify `el-patch-feature` due to
@@ -35,6 +38,8 @@ The format is based on [Keep a Changelog].
 * The patch definition macros now have their docstrings colored
   correctly by the syntax highlighter (by specifying `(declare
   (doc-string N))`).
+* `.dir-locals.el` is now ignored when validating patches
+  ([#2](https://github.com/raxod502/el-patch/issues/2)).
 
 ## 1.0 (released 2017-01-21)
 ### Added
