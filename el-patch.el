@@ -231,27 +231,43 @@ patching that might have taken place in
 `el-patch-pre-validate-hook', if you do not want the patches to
 be defined permanently.")
 
-(defun el-patch--find-function (name)
-  "Return the Lisp form that defines the function NAME.
+(defun el-patch--classify-definition-type (type)
+  "Classifies a definition TYPE as a `function' or `variable'.
+TYPE is a symbol `defun', `defmacro', etc."
+  (pcase type
+    ((or 'defun 'defmacro 'defsubst 'define-minor-mode)
+     'function)
+    ((or 'defvar 'defcustom)
+     'variable)
+    (_ (error "Unexpected definition type %S" type))))
+
+(defun el-patch--find-symbol (name type)
+  "Return the Lisp form that defines the symbol NAME.
 Return nil if such a definition cannot be found. (That would
-happen if the definition were generated dynamically.)"
-  (when (fboundp name)
-    (let* (;; Since Emacs actually opens the source file in a (hidden)
-           ;; buffer, it can try to apply local variables, which might
-           ;; result in an annoying interactive prompt. Let's disable
-           ;; that.
-           (enable-local-variables nil)
-           (enable-dir-local-variables nil)
-           ;; This is supposed to be noninteractive so we also
-           ;; suppress all the messages.
-           (inhibit-message t)
-           (message-log-max nil)
-           ;; Now we actually do the find-function operation.
-           (buffer-point (ignore-errors
-                           ;; Just in case we get an error because the
-                           ;; function is defined in the C code, we
-                           ;; ignore it and return nil.
-                           (save-excursion
+happen if the definition were generated dynamically.) TYPE is a
+symbol `defun', `defmacro', etc. which is used to determine
+whether the symbol is a function or variable."
+  (let ((classification (el-patch--classify-definition-type type)))
+    (when (pcase classification
+            ('function (fboundp name))
+            ('variable (boundp name)))
+      (let* (;; Since Emacs actually opens the source file in a (hidden)
+             ;; buffer, it can try to apply local variables, which might
+             ;; result in an annoying interactive prompt. Let's disable
+             ;; that.
+             (enable-local-variables nil)
+             (enable-dir-local-variables nil)
+             ;; This is supposed to be noninteractive so we also
+             ;; suppress all the messages. This has the side effect of
+             ;; masking all debugging messages (you can use `insert'
+             ;; instead, or temporarily remove these bindings), but
+             ;; there are just so many different messages that can
+             ;; happen for various reasons and I haven't found any other
+             ;; standard way to suppress them.
+             (inhibit-message t)
+             (message-log-max nil)
+             ;; Now we actually do the find-function operation.
+             (buffer-point (save-excursion
                              ;; This horrifying bit of hackery on
                              ;; `get-file-buffer' prevents
                              ;; `find-function-noselect' from
@@ -262,15 +278,19 @@ happen if the definition were generated dynamically.)"
                              ;; happens to be in the *current* buffer.
                              (cl-letf (((symbol-function #'get-file-buffer)
                                         (symbol-function #'ignore)))
-                               (find-function-noselect name 'lisp-only)))))
-           (defun-buffer (car buffer-point))
-           (defun-point (cdr buffer-point)))
-      (and defun-buffer
-           defun-point
-           (with-current-buffer defun-buffer
-             (save-excursion
-               (goto-char defun-point)
-               (read defun-buffer)))))))
+                               (pcase classification
+                                 ('function
+                                  (find-function-noselect name 'lisp-only))
+                                 ('variable
+                                  (find-variable-noselect name))))))
+             (defun-buffer (car buffer-point))
+             (defun-point (cdr buffer-point)))
+        (and defun-buffer
+             defun-point
+             (with-current-buffer defun-buffer
+               (save-excursion
+                 (goto-char defun-point)
+                 (read defun-buffer))))))))
 
 ;;;###autoload
 (defun el-patch-validate (patch-definition &optional nomsg run-hooks)
@@ -307,7 +327,7 @@ See also `el-patch-validate-all'."
                (expected-definition (el-patch--resolve-definition
                                      patch-definition nil))
                (name (cadr expected-definition))
-               (actual-definition (el-patch--find-function name)))
+               (actual-definition (el-patch--find-symbol name type)))
           (cond
            ((not actual-definition)
             (display-warning
@@ -375,7 +395,7 @@ Return a list of those items. Beware, uses heuristics."
              (or (when-let ((rest (member :variable body)))
                    (cadr rest))
                  name)))
-      ((quote defgroup)))))
+      (_ (error "Unexpected definition type %S" type)))))
 
 (defun el-patch--stealthy-eval (definition)
   "Evaluate DEFINITION without updating `load-history'.
@@ -405,6 +425,8 @@ etc., which may contain patch directives."
       ;; Now we actually overwrite the current definition.
       (el-patch--stealthy-eval definition))))
 
+;; Function-like objects.
+
 ;;;###autoload
 (defmacro el-patch-defun (&rest args)
   "Patch a function. The ARGS are the same as for `defun'."
@@ -426,6 +448,8 @@ etc., which may contain patch directives."
            (indent defun))
   `(el-patch--definition ',(cons #'defsubst args)))
 
+;; Variable-like objects.
+
 ;;;###autoload
 (defmacro el-patch-defvar (&rest args)
   "Patch a variable. The ARGS are the same as for `defvar'."
@@ -433,15 +457,12 @@ etc., which may contain patch directives."
   `(el-patch--definition ',(cons #'defvar args)))
 
 ;;;###autoload
-(defmacro el-patch-defgroup (&rest args)
-  "Patch a customization group. The ARGS are the same as for `defgroup'."
-  (declare (indent defun))
-  `(el-patch--definition ',(cons #'defgroup args)))
-
 (defmacro el-patch-defcustom (&rest args)
   "Patch a customizable variable. The ARGS are the same as for `defcustom'."
   (declare (indent defun))
   `(el-patch--definition ',(cons #'defcustom args)))
+
+;; Other objects.
 
 ;;;###autoload
 (defmacro el-patch-define-minor-mode (&rest args)
@@ -530,7 +551,10 @@ Resolves to ARG, which is not processed further by el-patch."
 
 ;;;###autoload
 (defmacro el-patch-feature (feature)
-  "Deprecated no-op for backwards compatibility."
+  "Deprecated no-op for backwards compatibility.
+This form previously declared that FEATURE needed to be loaded in
+order to define the function being patched, but it now does
+nothing."
   (declare (indent 0)
            (obsolete "el-patch-feature is no longer necessary" "1.1")))
 
@@ -626,7 +650,8 @@ patch's original definition. NAME and TYPE are as returned by
       (let* ((expected-definition (el-patch--resolve-definition
                                    patch-definition nil))
              (name (cadr expected-definition))
-             (actual-definition (el-patch--find-function name)))
+             (type (car expected-definition))
+             (actual-definition (el-patch--find-symbol name type)))
         (el-patch--ediff-forms
          "*el-patch actual*" actual-definition
          "*el-patch expected*" expected-definition)

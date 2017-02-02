@@ -318,8 +318,6 @@ You can also patch other types of definitions using:
 
 * `el-patch-defvar`
 
-* `el-patch-defgroup`
-
 * `el-patch-defcustom`
 
 * `el-patch-define-minor-mode`
