@@ -9,7 +9,6 @@ The format is based on [Keep a Changelog].
 ### Added
 * Patches can now be defined for more types of objects:
   * `el-patch-defvar`
-  * `el-patch-defgroup`
   * `el-patch-defcustom`
   * `el-patch-define-minor-mode`
 * New function `el-patch-get` to get a patch definition by name.
