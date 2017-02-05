@@ -326,6 +326,9 @@ You can also patch other types of definitions using:
 
 You can run Ediff on a patch (original vs. modified definitions) by
 running `M-x el-patch-ediff-patch` and selecting the desired patch.
+Note that in this context, the "original" definition is the one
+specified by the patch, not the actual definition that is checked when
+you validate the patch (see below).
 
 ## Validating patches
 
@@ -342,7 +345,11 @@ You can validate all the patches that have been defined so far using
 
 ## Removing patches
 
-Use `M-x el-patch-unpatch`.
+Use `M-x el-patch-unpatch`. Note that this does not technically remove
+the patch: instead, it sets the function or variable definition to the
+"original" definition as specified by the patch. These two actions
+will, however, be equivalent as long as the patch is not outdated
+(i.e., it is validated without errors by `M-x el-patch-validate`).
 
 ## Lazy-loading packages
 
