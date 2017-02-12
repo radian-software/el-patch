@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/
 
-## Unreleased
+## 1.1 (released 2017-02-11)
 ### Added
 * Patches can now be defined for more types of objects:
   * `el-patch-defvar`
