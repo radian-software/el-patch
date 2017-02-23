@@ -366,11 +366,12 @@ See `el-patch-validate'."
   (unwind-protect
       (let ((patch-count 0)
             (warning-count 0))
-        (dolist (patch-hash (hash-table-values el-patch--patches))
-          (dolist (patch-definition (hash-table-values patch-hash))
-            (setq patch-count (1+ patch-count))
-            (unless (el-patch-validate patch-definition 'nomsg)
-              (setq warning-count (1+ warning-count)))))
+        (dolist (name (hash-table-keys el-patch--patches))
+          (let ((patch-hash (gethash name el-patch--patches)))
+            (dolist (type (hash-table-keys patch-hash))
+              (setq patch-count (1+ patch-count))
+              (unless (el-patch-validate name type 'nomsg)
+                (setq warning-count (1+ warning-count))))))
         (cond
          ((zerop patch-count)
           (user-error "No patches defined"))
