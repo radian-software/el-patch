@@ -293,7 +293,7 @@ whether the symbol is a function or variable."
                  (read defun-buffer))))))))
 
 ;;;###autoload
-(defun el-patch-validate (patch-definition &optional nomsg run-hooks)
+(defun el-patch-validate (name type &optional nomsg run-hooks)
   "Validate the patch given by PATCH-DEFINITION.
 This means el-patch will attempt to find the original definition
 for the function, and verify that it is the same as the original
@@ -313,17 +313,22 @@ If NOMSG is non-nil, does not signal a message when the patch is
 valid.
 
 If RUN-HOOKS is non-nil, runs `el-patch-pre-validate-hook' and
-`el-patch-post-validate-hook'. Interactively, this happens when a
-prefix argument is provided.
+`el-patch-post-validate-hook'. Interactively, this happens unless
+a prefix argument is provided.
 
 See also `el-patch-validate-all'."
   (interactive (progn
-                 (when current-prefix-arg
+                 (unless current-prefix-arg
                    (run-hooks 'el-patch-pre-validate-hook))
-                 (list (el-patch--select-patch) nil current-prefix-arg)))
+                 (append (el-patch--select-patch)
+                         (list nil (unless current-prefix-arg
+                                     'post-only)))))
+  (unless (member run-hooks '(nil post-only))
+    (run-hooks 'el-patch-pre-validate-hook))
   (unwind-protect
       (progn
-        (let* ((type (car patch-definition))
+        (let* ((patch-definition (el-patch-get name type))
+               (type (car patch-definition))
                (expected-definition (el-patch--resolve-definition
                                      patch-definition nil))
                (name (cadr expected-definition))
@@ -573,9 +578,9 @@ not be found, return nil."
 
 (defun el-patch--select-patch ()
   "Use `completing-read' to select a patched function.
-Return a list of two elements, the name (a symbol `defun',
-`defmacro', etc.) of the object being patched and the type (a
-symbol) of the definition."
+Return a list of two elements, the name (a symbol) of the object
+being patched and the type (a symbol `defun', `defmacro', etc.)
+of the definition."
   (let ((options (mapcar #'symbol-name (hash-table-keys el-patch--patches))))
     (unless options
       (user-error "No patches defined"))
