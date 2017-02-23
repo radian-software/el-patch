@@ -406,10 +406,13 @@ Return a list of those items. Beware, uses heuristics."
   "Evaluate DEFINITION without updating `load-history'.
 DEFINITION should be a list beginning with `defun', `defmacro',
 `define-minor-mode', etc."
-  (eval definition)
-  (dolist (item (el-patch--compute-load-history-items
-                 definition))
-    (setq current-load-list (remove item current-load-list))))
+  (let ((items (cl-remove-if (lambda (item)
+                               (member item current-load-list))
+                             (el-patch--compute-load-history-items
+                              definition))))
+    (eval definition)
+    (dolist (item items)
+      (setq current-load-list (remove item current-load-list)))))
 
 (defun el-patch--definition (patch-definition)
   "Activate a PATCH-DEFINITION and update `el-patch--patches'.
