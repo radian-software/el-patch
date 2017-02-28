@@ -5,6 +5,27 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/
 
+## 1.1.1 (released 2017-02-27)
+### Changed
+* The function `el-patch-validate` now takes a patch name and type
+  rather than a patch definition. The remaining arguments `NOMSG` and
+  `RUN-HOOKS` have not changed.
+* The meaning of the prefix argument has been inverted for
+  `el-patch-validate`. Now it runs `el-patch-pre-validate-hook` and
+  `el-patch-post-validate-hook` by default, and only omits doing so if
+  a prefix argument is provided.
+
+### Fixed
+* Since version 1.1, `el-patch-validate` failed with an error in
+  `el-patch--classify-definition-type`. This has been fixed
+  ([#8](https://github.com/raxod502/el-patch/issues/8)).
+* Since version 1.1, if a patch was defined in the same file as the
+  function it patched, the patch could not be validated. This has been
+  fixed.
+* Previously, when `el-patch-validate` was called noninteractively
+  with a non-nil value for `RUN-HOOKS`, it failed to run
+  `el-patch-pre-validate-hook`. This has been fixed.
+
 ## 1.1 (released 2017-02-11)
 ### Added
 * Patches can now be defined for more types of objects:
@@ -18,6 +39,9 @@ The format is based on [Keep a Changelog].
   ([#5](https://github.com/raxod502/el-patch/issues/5)).
 * MIT license
   ([melpa/melpa#4512](https://github.com/melpa/melpa/pull/4512#issuecomment-274682089)).
+* Arbitrary functions can be run (to load patches) by adding things to
+  the new hook `el-patch-pre-validate-hook`. Cleanup can then be done
+  in `el-patch-post-validate-hook`.
 
 ### Changed
 * It is no longer necessary to specify `el-patch-feature` due to
