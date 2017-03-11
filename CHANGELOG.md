@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/
 
+## Unreleased
+### Added
+* Patches can now be defined for more types of objects:
+  * `el-patch-defconst`
+
 ## 1.1.1 (released 2017-02-27)
 ### Changed
 * The function `el-patch-validate` now takes a patch name and type

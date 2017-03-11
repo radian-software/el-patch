@@ -318,7 +318,18 @@ You can also patch other types of definitions using:
 
 * `el-patch-defvar`
 
+  (Warning: this will not affect the value of the variable, if it has
+  already been defined. It is only useful for lazy-loading.)
+
 * `el-patch-defcustom`
+
+  (Warning: this will not affect the value of the variable, if it has
+  already been defined. It is only useful for lazy-loading.)
+
+* `el-patch-defcustom`
+
+  (Warning: this will not affect the value of the variable, if it has
+  already been defined. It is only useful for lazy-loading.)
 
 * `el-patch-define-minor-mode`
 

@@ -237,7 +237,7 @@ TYPE is a symbol `defun', `defmacro', etc."
   (pcase type
     ((or 'defun 'defmacro 'defsubst 'define-minor-mode)
      'function)
-    ((or 'defvar 'defcustom)
+    ((or 'defvar 'defconst 'defcustom)
      'variable)
     (_ (error "Unexpected definition type %S" type))))
 
@@ -394,7 +394,7 @@ Return a list of those items. Beware, uses heuristics."
     (pcase type
       ((or 'defun 'defmacro 'defsubst)
        (list (cons 'defun name)))
-      ((or 'defvar 'defcustom)
+      ((or 'defvar 'defconst 'defcustom)
        (list name))
       ((quote define-minor-mode)
        (list (cons 'defun name)
@@ -464,6 +464,12 @@ etc., which may contain patch directives."
   "Patch a variable. The ARGS are the same as for `defvar'."
   (declare (indent defun))
   `(el-patch--definition ',(cons #'defvar args)))
+
+;;;###autoload
+(defmacro el-patch-defconst (&rest args)
+  "Patch a constant. The ARGS are the same as for `defconst'."
+  (declare (indent defun))
+  `(el-patch--definition ',(cons #'defconst args)))
 
 ;;;###autoload
 (defmacro el-patch-defcustom (&rest args)
