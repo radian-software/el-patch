@@ -33,9 +33,8 @@
 
 ### How do I get it
 
-From MELPA, using your package manager of choice. See [Installation].
-
-[installation]: #installation
+From MELPA, using your package manager of choice.
+See [Installation][installation].
 
 ### What is it
 
@@ -46,64 +45,77 @@ using `el-patch` is that you will be notified if the definition of a
 function you are customizing changes, so that you are aware your
 customizations might need to be updated.
 
-[advice]: https://www.gnu.org/software/emacs/manual/html_node/elisp/Advising-Functions.html
-
-Using the same mechanism, `el-patch` also provides [a way] to make
-lazy-loading packages much more easy, powerful, and robust.
-
-[a way]: #lazy-loading-packages
+Using the same mechanism, `el-patch` also
+provides [a way][lazy-loading] to make lazy-loading packages much more
+easy, powerful, and robust.
 
 ## Installation
 
-`el-patch` is available on MELPA.
+`el-patch` is available on [MELPA][melpa].
 
-Install using [`straight.el`] with [`use-package`]:
+Install using [`straight.el`][straight.el]
+with [`use-package`][use-package]:
 
+    ;; <bootstrap code for straight.el, see
+    ;;  https://github.com/raxod502/straight.el>
+    (straight-use-package 'use-package)
     (use-package el-patch)
 
+Install using [`package.el`][package.el]
+with [`use-package`][use-package]:
 
-Install using [`package.el`] with [`use-package`]:
-
+    (add-to-list 'package-archives
+                 '("melpa" . "https://melpa.org/packages/"))
+    (package-initialize)
+    (unless (package-installed-p 'use-package)
+      (package-refresh-contents)
+      (package-install 'use-package))
     (use-package el-patch
       :ensure t)
 
-Install using [`quelpa`] with [`use-package`] via [`quelpa-use-package`]:
+Install using [`quelpa`][quelpa] with [`use-package`][use-package]
+via [`quelpa-use-package`][quelpa-use-package]:
 
+    ;; <bootstrap code for quelpa, see
+    ;;  https://github.com/quelpa/quelpa>
+    (quelpa 'use-package)
+    (quelpa 'quelpa-use-package)
     (use-package el-patch
       :quelpa t)
 
-Install using plain [`straight.el`]:
+Install using plain [`straight.el`][straight.el]:
 
+    ;; <bootstrap code for straight.el, see
+    ;;  https://github.com/raxod502/straight.el>
     (straight-use-package 'el-patch)
 
-Install using plain [`package.el`]:
+Install using plain [`package.el`][package.el]:
 
+    (add-to-list 'package-archives
+                 '("melpa" . "https://melpa.org/packages/"))
+    (package-initialize)
     (unless (package-installed-p 'el-patch)
       (package-install 'el-patch))
 
-Install using plain [`quelpa`]:
+Install using plain [`quelpa`][quelpa]:
 
+    ;; <bootstrap code for straight.el, see
+    ;;  https://github.com/raxod502/straight.el>
     (quelpa 'el-patch)
 
 Install manually:
 
-    $ git clone https://github.com/raxod502/el-patch.git
+    $ git clone https://github.com/raxod502/el-patch.git ~/.emacs.d/el-patch
 
-    (add-to-list 'load-path "/path/to/el-patch")
+    (add-to-list 'load-path "~/.emacs.d/el-patch")
     (require 'el-patch)
-
-[`straight.el`]: https://github.com/raxod502/straight.el
-[`use-package`]: https://github.com/jwiegley/use-package
-[`package.el`]: https://www.gnu.org/software/emacs/manual/html_node/emacs/Packages.html
-[`quelpa-use-package`]: https://github.com/quelpa/quelpa-use-package
-[`quelpa`]: https://github.com/quelpa/quelpa
 
 ## Why does it exist
 
 Emacs provides a comprehensive set of customizable variables and hooks
-as well as a powerful [advice] system. Sometimes, however, these are
-not enough and you must override the entire function in order to
-change a detail of its implementation.
+as well as a powerful [advice][advice] system. Sometimes, however,
+these are not enough and you must override the entire function in
+order to change a detail of its implementation.
 
 Such a situation is not ideal, since the original definition of the
 function might change when you update Emacs or one of its packages,
@@ -124,14 +136,12 @@ have, `el-patch` will show you the difference using Ediff.
 
 ## Basic usage
 
-Consider the following function defined in the [`company-statistics`]
-package:
+Consider the following function defined in
+the [`company-statistics`][company-statistics] package:
 
     (defun company-statistics--load ()
       "Restore statistics."
       (load company-statistics-file 'noerror nil 'nosuffix))
-
-[`company-statistics`]: https://github.com/company-mode/company-statistics
 
 Suppose we want to change the third argument from `nil` to
 `'nomessage`, to suppress the message that is logged when
@@ -145,11 +155,10 @@ placing the following code in our `init.el`:
             'nosuffix))
 
 Simply calling `el-patch-defun` instead of `defun` defines a no-op
-patch: that is, it has no effect (well, not quite—see [later]).
-However, by including *patch directives*, you can make the modified
-version of the function different from the original.
-
-[later]: #lazy-loading-packages
+patch: that is, it has no effect (well, not
+quite—see [later][lazy-loading]). However, by including *patch
+directives*, you can make the modified version of the function
+different from the original.
 
 In this case, we use the `el-patch-swap` directive. The
 `el-patch-swap` form is replaced with `nil` in the original definition
@@ -257,9 +266,7 @@ in your init-file).
          (t $else)))
 
   However, this is not ideal because you have repeated the forms and
-  violated [DRY].
-
-  [dry]: https://en.wikipedia.org/wiki/Don't_repeat_yourself
+  violated [DRY][dry].
 
   You could achieve the patch without any repetition by using the
   basic patch directives, but that would be hard to read. Wouldn't it
@@ -367,20 +374,20 @@ will, however, be equivalent as long as the patch is not outdated
 `el-patch` does not mind if you patch a function that is not yet
 defined. You can therefore use `el-patch` to help lazy-load a package.
 
-As an example, consider the [`ivy`] package. `ivy` provides a minor
+As an example, consider the [Ivy][ivy] package. Ivy provides a minor
 mode called `ivy-mode` that sets `completing-read-function` to
 `ivy-completing-read`. The idea is that you call this function
 immediately, so that when a `completing-read` happens, it calls into
 the Ivy code.
 
-[`ivy`]: https://github.com/abo-abo/swiper
-
-Now, `ivy-completing-read` is autoloaded. However, calling `ivy-mode`
-will trigger the autoload for Ivy, so we can't do that if we want to
-lazy-load the package. The natural thing to do is to copy the
-definition of `ivy-mode` into our init-file, but what if the original
-definition changes? That's where `el-patch` comes in. The code from
-Ivy looks like this:
+Now, `ivy-completing-read` is autoloaded. So Ivy does not need to be
+loaded immediately: as soon as `ivy-completing-read` is called, Ivy
+will be loaded automatically. However, calling `ivy-mode` will trigger
+the autoload for Ivy, so we can't do that if we want to lazy-load the
+package. The natural thing to do is to copy the definition of
+`ivy-mode` into our init-file, but what if the original definition
+changes? That's where `el-patch` comes in. The code from Ivy looks
+like this:
 
     (defvar ivy-mode-map
       (let ((map (make-sparse-keymap)))
@@ -414,7 +421,7 @@ Ivy looks like this:
         (setq completing-read-function 'completing-read-default)
         (setq completion-in-region-function 'completion--in-region)))
 
-To enable `ivy-mode` while still lazy-loading `ivy`, simply copy those
+To enable `ivy-mode` while still lazy-loading Ivy, simply copy those
 definitions to your init-file before the call to `ivy-mode`, replacing
 `defvar` with `el-patch-defvar` and replacing `define-minor-mode` with
 `el-patch-define-minor-mode`. That is:
@@ -474,10 +481,8 @@ provide a prefix argument.
 
 If you don't want all of your patches to be defined all the time, you
 can put some functions in `el-patch-post-validate-hook` to disable
-them again. For some examples of how to use these hooks, check out [my
-Emacs init-file].
-
-[my emacs init-file]: https://github.com/raxod502/radian/blob/master/init.el
+them again. For some examples of how to use these hooks, check out
+[Radian Emacs][radian].
 
 ## But how does it work?
 
@@ -499,6 +504,19 @@ again and the original version is installed using `set` or `fset`.
 
 ## But does it actually work?
 
-It doesn't seem to crash [my Emacs], at least.
+It doesn't seem to crash [my Emacs][radian], at least.
 
-[my emacs]: https://github.com/raxod502/radian/blob/master/init.el
+[installation]: #installation
+
+[advice]: https://www.gnu.org/software/emacs/manual/html_node/elisp/Advising-Functions.html
+[company-statistics]: https://github.com/company-mode/company-statistics
+[dry]: https://en.wikipedia.org/wiki/Don't_repeat_yourself
+[ivy]: https://github.com/abo-abo/swiper
+[lazy-loading]: #lazy-loading-packages
+[melpa]: http://melpa.org
+[package.el]: https://www.gnu.org/software/emacs/manual/html_node/emacs/Packages.html
+[quelpa-use-package]: https://github.com/quelpa/quelpa-use-package
+[quelpa]: https://github.com/quelpa/quelpa
+[radian]: https://github.com/raxod502/radian
+[straight.el]: https://github.com/raxod502/straight.el
+[use-package]: https://github.com/jwiegley/use-package
