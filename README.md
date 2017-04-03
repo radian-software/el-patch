@@ -28,22 +28,22 @@
 
 <!-- markdown-toc end -->
 
-
 ## TL;DR
 
 ### How do I get it
 
-From MELPA, using your package manager of choice.
-See [Installation][installation].
+From [MELPA][melpa], using your package manager of choice.
+See [Installation][installation]. Emacs 25 and later is supported,
+please submit an issue if you want `el-patch` to support Emacs 24.
 
 ### What is it
 
-Like the [advice] system, `el-patch` provides a way to customize the
-behavior of Emacs Lisp functions that do not provide enough variables
-and hooks to let you make them do what you want. The advantage of
-using `el-patch` is that you will be notified if the definition of a
-function you are customizing changes, so that you are aware your
-customizations might need to be updated.
+Like the [advice][advice] system, `el-patch` provides a way to
+customize the behavior of Emacs Lisp functions that do not provide
+enough variables and hooks to let you make them do what you want. The
+advantage of using `el-patch` is that you will be notified if the
+definition of a function you are customizing changes, so that you are
+aware your customizations might need to be updated.
 
 Using the same mechanism, `el-patch` also
 provides [a way][lazy-loading] to make lazy-loading packages much more
@@ -56,10 +56,11 @@ easy, powerful, and robust.
 Install using [`straight.el`][straight.el]
 with [`use-package`][use-package]:
 
-    ;; <bootstrap code for straight.el, see
+    ;; <bootstrap code for straight.el goes here, see
     ;;  https://github.com/raxod502/straight.el>
     (straight-use-package 'use-package)
-    (use-package el-patch)
+    (use-package el-patch
+      :ensure t)
 
 Install using [`package.el`][package.el]
 with [`use-package`][use-package]:
@@ -76,7 +77,7 @@ with [`use-package`][use-package]:
 Install using [`quelpa`][quelpa] with [`use-package`][use-package]
 via [`quelpa-use-package`][quelpa-use-package]:
 
-    ;; <bootstrap code for quelpa, see
+    ;; <bootstrap code for quelpa goes here, see
     ;;  https://github.com/quelpa/quelpa>
     (quelpa 'use-package)
     (quelpa 'quelpa-use-package)
@@ -85,7 +86,7 @@ via [`quelpa-use-package`][quelpa-use-package]:
 
 Install using plain [`straight.el`][straight.el]:
 
-    ;; <bootstrap code for straight.el, see
+    ;; <bootstrap code for straight.el goes here, see
     ;;  https://github.com/raxod502/straight.el>
     (straight-use-package 'el-patch)
 
@@ -99,7 +100,7 @@ Install using plain [`package.el`][package.el]:
 
 Install using plain [`quelpa`][quelpa]:
 
-    ;; <bootstrap code for straight.el, see
+    ;; <bootstrap code for straight.el goes here, see
     ;;  https://github.com/raxod502/straight.el>
     (quelpa 'el-patch)
 
