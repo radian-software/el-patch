@@ -321,7 +321,7 @@ You can also patch other types of definitions using:
   (Warning: this will not affect the value of the variable, if it has
   already been defined. It is only useful for lazy-loading.)
 
-* `el-patch-defcustom`
+* `el-patch-defconst`
 
   (Warning: this will not affect the value of the variable, if it has
   already been defined. It is only useful for lazy-loading.)
@@ -417,7 +417,45 @@ Ivy looks like this:
 To enable `ivy-mode` while still lazy-loading `ivy`, simply copy those
 definitions to your init-file before the call to `ivy-mode`, replacing
 `defvar` with `el-patch-defvar` and replacing `define-minor-mode` with
-`el-patch-define-minor-mode`.
+`el-patch-define-minor-mode`. That is:
+
+    (el-patch-defvar ivy-mode-map
+      (let ((map (make-sparse-keymap)))
+        (define-key map [remap switch-to-buffer]
+          'ivy-switch-buffer)
+        (define-key map [remap switch-to-buffer-other-window]
+          'ivy-switch-buffer-other-window)
+        map)
+      "Keymap for `ivy-mode'.")
+
+    (el-patch-define-minor-mode ivy-mode
+      "Toggle Ivy mode on or off.
+    Turn Ivy mode on if ARG is positive, off otherwise.
+    Turning on Ivy mode sets `completing-read-function' to
+    `ivy-completing-read'.
+
+    Global bindings:
+    \\{ivy-mode-map}
+
+    Minibuffer bindings:
+    \\{ivy-minibuffer-map}"
+      :group 'ivy
+      :global t
+      :keymap ivy-mode-map
+      :lighter " ivy"
+      (if ivy-mode
+          (progn
+            (setq completing-read-function 'ivy-completing-read)
+            (when ivy-do-completion-in-region
+              (setq completion-in-region-function 'ivy-completion-in-region)))
+        (setq completing-read-function 'completing-read-default)
+        (setq completion-in-region-function 'completion--in-region)))
+
+    (ivy-mode 1)
+
+    (featurep 'ivy) ;; => ivy is still not loaded!
+
+It's really that simple!
 
 ## Validating patches that are not loaded yet
 
