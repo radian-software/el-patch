@@ -96,6 +96,7 @@ Install using plain [`package.el`][package.el]:
                  '("melpa" . "https://melpa.org/packages/"))
     (package-initialize)
     (unless (package-installed-p 'el-patch)
+      (package-refresh-contents)
       (package-install 'el-patch))
 
 Install using plain [`quelpa`][quelpa]:
