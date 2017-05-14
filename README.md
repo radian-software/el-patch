@@ -508,12 +508,12 @@ again and the original version is installed using `set` or `fset`.
 It doesn't seem to crash [my Emacs][radian], at least.
 
 [installation]: #installation
+[lazy-loading]: #lazy-loading-packages
 
 [advice]: https://www.gnu.org/software/emacs/manual/html_node/elisp/Advising-Functions.html
 [company-statistics]: https://github.com/company-mode/company-statistics
 [dry]: https://en.wikipedia.org/wiki/Don't_repeat_yourself
 [ivy]: https://github.com/abo-abo/swiper
-[lazy-loading]: #lazy-loading-packages
 [melpa]: http://melpa.org
 [package.el]: https://www.gnu.org/software/emacs/manual/html_node/emacs/Packages.html
 [quelpa-use-package]: https://github.com/quelpa/quelpa-use-package
