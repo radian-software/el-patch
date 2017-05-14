@@ -17,6 +17,12 @@ The format is based on [Keep a Changelog].
 * Variables `el-patch-pre-validate-hook` and
   `el-patch-post-validate-hook` are now Custom variables.
 
+### Fixed
+* Since version 1.1, the "But how does it work?" section of the README
+  contained an erroneous explanation implying that `set` and `fset`
+  were used to establish patched definitions. This has been replaced
+  with a correct explanation.
+
 ## 1.1.1 (released 2017-02-27)
 ### Changed
 * The function `el-patch-validate` now takes a patch name and type
