@@ -329,7 +329,9 @@ Some warnings:
   macroexpansion and byte-compilation. You may need to define no-op
   patches of client functions to get your changes to show up. Or take
   a different strategy—figuring out the best way to make a particular
-  change to an internal function is often a complex process.
+  change to an internal function is often a complex process. You may
+  also consider using advice, dynamic binding, and just plain forking
+  the package.
 
 * Patching `defvar`, `defconst`, and `defcustom` forms will not affect
   the value of the variable, if it has already been defined. Thus,
