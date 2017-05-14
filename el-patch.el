@@ -50,6 +50,24 @@
 (require 'cl-lib)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; User-facing variables
+
+(defgroup el-patch nil
+  "Future-proof your Emacs Lisp customizations!"
+  :prefix "el-patch-"
+  :group 'lisp
+  :link '(url-link :tag "GitHub" "https://github.com/raxod502/el-patch")
+  :link '(emacs-commentary-link :tag "Commentary" "el-patch"))
+
+(defcustom el-patch-use-aggressive-defvar nil
+  "When patching `defvar' or similar, override existing values.
+This means that `el-patch-defvar', `el-patch-defconst', and
+`el-patch-defcustom' will unbind the old variable definition
+before evaluating the new one."
+  :type 'boolean
+  :group 'el-patch)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Internal variables
 
 (defvar el-patch--patches (make-hash-table :test 'equal)
@@ -216,20 +234,24 @@ new version."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Validating patches
 
-(defvar el-patch-pre-validate-hook nil
+(defcustom el-patch-pre-validate-hook nil
   "Hook run before `el-patch-validate-all'.
 Also run before `el-patch-validate' if a prefix argument is
 provided. This hook should contain functions that make sure all
 of your patches are defined (for example, you might need to load
-some features if your patches are lazily defined).")
+some features if your patches are lazily defined)."
+  :type 'hook
+  :group 'el-patch)
 
-(defvar el-patch-post-validate-hook nil
+(defcustom el-patch-post-validate-hook nil
   "Hook run after `el-patch-validate-all'.
 Also run after `el-patch-validate' if a prefix argument is
 provided. This hook should contain functions that undo any
 patching that might have taken place in
 `el-patch-pre-validate-hook', if you do not want the patches to
-be defined permanently.")
+be defined permanently."
+  :type 'hook
+  :group 'el-patch)
 
 (defun el-patch--classify-definition-type (type)
   "Classifies a definition TYPE as a `function' or `variable'.
@@ -411,6 +433,15 @@ DEFINITION should be a list beginning with `defun', `defmacro',
                                (member item current-load-list))
                              (el-patch--compute-load-history-items
                               definition))))
+    (when (and el-patch-use-aggressive-defvar
+               (eq (el-patch--classify-definition-type
+                    (car definition))
+                   'variable))
+      ;; Note that this won't necessarily handle `define-minor-mode'
+      ;; correctly if a custom `:variable' is specified. However, I'm
+      ;; not going to handle that edge case until somebody else
+      ;; complains about it.
+      (makunbound (cadr definition)))
     (eval definition)
     (dolist (item items)
       (setq current-load-list (remove item current-load-list)))))

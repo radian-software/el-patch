@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog].
 ### Added
 * Patches can now be defined for more types of objects:
   * `el-patch-defconst`
+* Custom group for `el-patch`.
+* New user option `el-patch-aggressive-defvar` to allow overriding the
+  existing value of a variable.
+
+### Changed
+* Variables `el-patch-pre-validate-hook` and
+  `el-patch-post-validate-hook` are now Custom variables.
 
 ## 1.1.1 (released 2017-02-27)
 ### Changed
