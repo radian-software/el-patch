@@ -298,11 +298,11 @@ in your init-file).
   `el-patch-literal` to prevent anything within from being interpreted
   by `el-patch`. For example, the following form:
 
-      (foo (patch-literal (patch-add bar baz)) quux)
+      (foo (el-patch-literal (el-patch-add bar baz)) quux)
 
   will be replaced with:
 
-      (foo (patch-add bar baz) quux)
+      (foo (el-patch-add bar baz) quux)
 
   in both the original and modified definitions.
 
