@@ -316,31 +316,30 @@ definition is what you desire.
 You can also patch other types of definitions using:
 
 * `el-patch-defmacro`
-
-  (Warning: this will not affect usages of the macro in functions that
-  have already been defined.)
-
 * `el-patch-defsubst`
-
-  (Warning: this will not affect usages of the inline function in
-  functions that have already been defined.)
-
 * `el-patch-defvar`
-
-  (Warning: this will not affect the value of the variable, if it has
-  already been defined. It is only useful for lazy-loading.)
-
 * `el-patch-defconst`
-
-  (Warning: this will not affect the value of the variable, if it has
-  already been defined. It is only useful for lazy-loading.)
-
 * `el-patch-defcustom`
-
-  (Warning: this will not affect the value of the variable, if it has
-  already been defined. It is only useful for lazy-loading.)
-
 * `el-patch-define-minor-mode`
+
+Some warnings:
+
+* Patching `defmacro`, `defsubst`, and `defconst` forms will not
+  affect usages of them in already-defined functions, due to
+  macroexpansion and byte-compilation. You may need to define no-op
+  patches of client functions to get your changes to show up. Or take
+  a different strategy—figuring out the best way to make a particular
+  change to an internal function is often a complex process.
+
+* Patching `defvar`, `defconst`, and `defcustom` forms will not affect
+  the value of the variable, if it has already been defined. Thus,
+  they are only useful for lazy-loading by default. To override this
+  behavior and force the patches to reset the value of the variable,
+  if it is already defined, set `el-patch-use-aggressive-defvar`.
+
+* Using `el-patch-use-aggressive-defvar` together with a custom
+  `:variable` in `el-patch-define-minor-mode` is not currently
+  supported. If you have a need for this use case, open an issue.
 
 ## Inspecting patches
 
