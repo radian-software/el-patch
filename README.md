@@ -51,66 +51,13 @@ easy, powerful, and robust.
 
 ## Installation
 
-`el-patch` is available on [MELPA][melpa].
+`el-patch` is available on [MELPA][melpa]. It is easiest to install it
+using [`straight.el`][straight.el]:
 
-Install using [`straight.el`][straight.el]
-with [`use-package`][use-package]:
-
-    ;; <bootstrap code for straight.el goes here, see
-    ;;  https://github.com/raxod502/straight.el>
-    (straight-use-package 'use-package)
-    (use-package el-patch
-      :ensure t)
-
-Install using [`package.el`][package.el]
-with [`use-package`][use-package]:
-
-    (add-to-list 'package-archives
-                 '("melpa" . "https://melpa.org/packages/"))
-    (package-initialize)
-    (unless (package-installed-p 'use-package)
-      (package-refresh-contents)
-      (package-install 'use-package))
-    (use-package el-patch
-      :ensure t)
-
-Install using [`quelpa`][quelpa] with [`use-package`][use-package]
-via [`quelpa-use-package`][quelpa-use-package]:
-
-    ;; <bootstrap code for quelpa goes here, see
-    ;;  https://github.com/quelpa/quelpa>
-    (quelpa 'use-package)
-    (quelpa 'quelpa-use-package)
-    (use-package el-patch
-      :quelpa t)
-
-Install using plain [`straight.el`][straight.el]:
-
-    ;; <bootstrap code for straight.el goes here, see
-    ;;  https://github.com/raxod502/straight.el>
     (straight-use-package 'el-patch)
 
-Install using plain [`package.el`][package.el]:
-
-    (add-to-list 'package-archives
-                 '("melpa" . "https://melpa.org/packages/"))
-    (package-initialize)
-    (unless (package-installed-p 'el-patch)
-      (package-refresh-contents)
-      (package-install 'el-patch))
-
-Install using plain [`quelpa`][quelpa]:
-
-    ;; <bootstrap code for straight.el goes here, see
-    ;;  https://github.com/raxod502/straight.el>
-    (quelpa 'el-patch)
-
-Install manually:
-
-    $ git clone https://github.com/raxod502/el-patch.git ~/.emacs.d/el-patch
-
-    (add-to-list 'load-path "~/.emacs.d/el-patch")
-    (require 'el-patch)
+However, you may install using any other package manager if you
+prefer.
 
 ## Why does it exist
 
