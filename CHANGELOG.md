@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/
 
 ## Unreleased
+### Added
+* `el-patch` now has a Makefile for convenient byte-compilation,
+  linting, and table-of-contents updating.
+
 ### Removed
 * Deprecated patch directive `el-patch-feature` has been removed.
 
