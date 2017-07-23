@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog].
 * `el-patch` now has a Makefile for convenient byte-compilation,
   linting, and table-of-contents updating.
 * `el-patch` now checks for byte-compilation and checkdoc warnings on
-  Travis CI.
+  Travis CI ([#7](https://github.com/raxod502/el-patch/issues/7)).
 
 ### Removed
 * Deprecated patch directive `el-patch-feature` has been removed.
