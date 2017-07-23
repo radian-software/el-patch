@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog].
 [Keep a Changelog]: http://keepachangelog.com/
 
 ## Unreleased
+### Removed
+* Deprecated patch directive `el-patch-feature` has been removed.
+
+## 1.1.2 (released 2017-06-05)
 ### Added
 * Patches can now be defined for more types of objects:
   * `el-patch-defconst`
