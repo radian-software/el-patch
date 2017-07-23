@@ -315,7 +315,7 @@ whether the symbol is a function or variable."
 
 ;;;###autoload
 (defun el-patch-validate (name type &optional nomsg run-hooks)
-  "Validate the patch given by PATCH-DEFINITION.
+  "Validate the patch with given NAME and TYPE.
 This means el-patch will attempt to find the original definition
 for the function, and verify that it is the same as the original
 function assumed by the patch. A warning will be signaled if the
@@ -326,8 +326,8 @@ definitions.
 Interactively, use `completing-read' to select a function to
 inspect the patch of.
 
-PATCH-DEFINITION is a list beginning with `defun', `defmacro',
-etc.
+NAME is a symbol naming the object being patched; TYPE is a
+symbol `defun', `defmacro', etc.
 
 Returns nil if the patch is not valid, and otherwise returns t.
 If NOMSG is non-nil, does not signal a message when the patch is

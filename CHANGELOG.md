@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog].
 ### Fixed
 * Messages emitted by `el-patch-validate-all` now have correct
   pluralization ([#9](https://github.com/raxod502/el-patch/issues/9)).
+* The documentation on `el-patch-validate` was not updated to reflect
+  its new signature in version 1.1.1. This has now been fixed.
 
 ## 1.1.2 (released 2017-06-05)
 ### Added
