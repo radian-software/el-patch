@@ -11,6 +11,13 @@ The format is based on [Keep a Changelog].
   linting, and table-of-contents updating.
 * `el-patch` now checks for byte-compilation and checkdoc warnings on
   Travis CI ([#7](https://github.com/raxod502/el-patch/issues/7)).
+* New macro `el-patch-feature` (unrelated to the old obsolete
+  `el-patch-feature` macro that was removed) which is a convenient way
+  to add feature-requiring functions to `el-patch-pre-validate-hook`
+  ([#10](https://github.com/raxod502/el-patch/issues/10)).
+* New user option `el-patch-require-function` for advanced users only.
+  It allows you to integrate `el-patch-feature` with your package
+  manager, and other things like that.
 
 ### Removed
 * Deprecated patch directive `el-patch-feature` has been removed.

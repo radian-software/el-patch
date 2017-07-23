@@ -67,6 +67,16 @@ before evaluating the new one."
   :type 'boolean
   :group 'el-patch)
 
+(defcustom el-patch-require-function #'require
+  "Function to `require' a feature in `el-patch-pre-validate-hook'.
+This is passed all of the arguments of `el-patch-feature' as
+quoted literals, and it should load the feature. This function
+might be useful if, for example, some of your features are
+provided by lazy-installed packages, and those packages need to
+be installed before the features can be loaded."
+  :type 'function
+  :group 'el-patch)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Internal variables
 
@@ -524,6 +534,26 @@ etc., which may contain patch directives."
   (declare (doc-string 2)
            (indent defun))
   `(el-patch--definition ',(cons #'define-minor-mode args)))
+
+;; For convenience.
+
+;;;###autoload
+(defmacro el-patch-feature (feature &rest args)
+  "Declare that some patches are only defined after FEATURE is loaded.
+This is a convenience macro that creates a function for invoking
+`require' on that feature, and then adds it to
+`el-patch-pre-validate-hook' so that your patches are loaded and
+`el-patch' can properly validate them.
+
+FEATURE should be an unquoted symbol. ARGS, if given, are passed
+as quoted literals along with FEATURE to
+`el-patch-require-function' when `el-patch-validate-all' is
+called."
+  (let ((defun-name (intern (format "el-patch-require-%S" feature))))
+    `(progn
+       (defun ,defun-name ()
+         (apply el-patch-require-function ',feature ',args))
+       (add-hook 'el-patch-pre-validate-hook #',defun-name))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Patch directives

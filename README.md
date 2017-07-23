@@ -429,6 +429,12 @@ even enable a custom minor mode). This hook is run before
 `el-patch-validate-all`, and also before `el-patch-validate` when you
 provide a prefix argument.
 
+Since defining some patches after a feature is loaded is such a common
+operation, `el-patch` provides a convenience macro for it:
+`el-patch-feature`. You can call this macro with an (unquoted) feature
+name, and it will create a function that loads that feature, and add
+it to `el-patch-pre-validate-hook` for you.
+
 If you don't want all of your patches to be defined all the time, you
 can put some functions in `el-patch-post-validate-hook` to disable
 them again. For some examples of how to use these hooks, check out
