@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog].
 ### Removed
 * Deprecated patch directive `el-patch-feature` has been removed.
 
+### Fixed
+* Messages emitted by `el-patch-validate-all` now have correct
+  pluralization ([#9](https://github.com/raxod502/el-patch/issues/9)).
+
 ## 1.1.2 (released 2017-06-05)
 ### Added
 * Patches can now be defined for more types of objects:
