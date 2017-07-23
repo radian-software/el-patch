@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/
 
-## Unreleased
+## 1.2 (released 2017-07-23)
 ### Added
 * `el-patch` now has a Makefile for convenient byte-compilation,
   linting, and table-of-contents updating.
