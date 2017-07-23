@@ -397,12 +397,21 @@ See `el-patch-validate'."
          ((zerop patch-count)
           (user-error "No patches defined"))
          ((zerop warning-count)
-          (message "All %d patches are valid" patch-count))
+          (if (= patch-count 1)
+              (message "Patch is valid (only one defined)")
+            (message "All %d patches are valid" patch-count)))
          ((= patch-count warning-count)
-          (message "All %d patches are invalid" patch-count))
+          (if (= patch-count 1)
+              (message "Patch is invalid (only one defined)")
+            (message "All %d patches are invalid" patch-count)))
          (t
-          (message "%d patches are valid, %d patches are invalid"
-                   (- patch-count warning-count) warning-count))))
+          (message "%s valid, %s invalid"
+                   (if (= warning-count (1- patch-count))
+                       "1 patch is"
+                     (format "%d patches are" (- patch-count warning-count)))
+                   (if (= warning-count 1)
+                       "1 patch is"
+                     (format "%d patches are" warning-count))))))
     (run-hooks 'el-patch-post-validate-hook)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
