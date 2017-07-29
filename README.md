@@ -464,6 +464,18 @@ el-patch-validate` and `M-x el-patch-ediff-conflict`.
 When you call `M-x el-patch-unpatch`, the patch definition is resolved
 again and the original version is installed by evaluating it.
 
+## `el-patch` is not needed at runtime
+
+El-patch computes the patched definition and generates the code to
+register and apply it at compile time. Therefore, `el-patch` need not be loaded at runtime.
+This means you can write:
+
+    (eval-when-compile
+      (require 'el-patch))
+    (defvar el-patch--patches (make-hash-table))
+
+And `el-patch` will not be loaded on init!
+
 ## But does it actually work?
 
 It doesn't seem to crash [my Emacs][radian], at least.
