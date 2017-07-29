@@ -462,7 +462,9 @@ DEFINITION should be a list beginning with `defun', `defmacro',
            ;; complains about it.
            (list `(makunbound ,(cadr definition))))
        ,definition
-       ,@(cl-loop for item in items collect `(setq current-load-list (remove ',item current-load-list))))))
+       ,@(cl-loop for item in items collect
+                  `(setq current-load-list
+                         (remove ',item current-load-list))))))
 
 (defmacro el-patch--definition (patch-definition)
   "Activate a PATCH-DEFINITION and update `el-patch--patches'.
@@ -745,8 +747,8 @@ This restores the original functionality of the object being
 patched. NAME and TYPE are as returned by `el-patch-get'."
   (interactive (el-patch--select-patch))
   (if-let ((patch-definition (el-patch-get name type)))
-      (el-patch--stealthy-eval (el-patch--resolve-definition
-                                patch-definition nil))
+      (eval `(el-patch--stealthy-eval ,(el-patch--resolve-definition
+                                        patch-definition nil)))
     (error "There is no patch for %S %S" type name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
