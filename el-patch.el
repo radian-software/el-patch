@@ -443,7 +443,7 @@ Return a list of those items. Beware, uses heuristics."
                  name)))
       (_ (error "Unexpected definition type %S" type)))))
 
-(defun el-patch--stealthy-eval (definition)
+(defmacro el-patch--stealthy-eval (definition)
   "Evaluate DEFINITION without updating `load-history'.
 DEFINITION should be a list beginning with `defun', `defmacro',
 `define-minor-mode', etc."
@@ -451,20 +451,20 @@ DEFINITION should be a list beginning with `defun', `defmacro',
                                (member item current-load-list))
                              (el-patch--compute-load-history-items
                               definition))))
-    (when (and el-patch-use-aggressive-defvar
-               (eq (el-patch--classify-definition-type
-                    (car definition))
-                   'variable))
-      ;; Note that this won't necessarily handle `define-minor-mode'
-      ;; correctly if a custom `:variable' is specified. However, I'm
-      ;; not going to handle that edge case until somebody else
-      ;; complains about it.
-      (makunbound (cadr definition)))
-    (eval definition)
-    (dolist (item items)
-      (setq current-load-list (remove item current-load-list)))))
+    `(progn
+       ,@(when (and el-patch-use-aggressive-defvar
+                    (eq (el-patch--classify-definition-type
+                         (car definition))
+                        'variable))
+           ;; Note that this won't necessarily handle `define-minor-mode'
+           ;; correctly if a custom `:variable' is specified. However, I'm
+           ;; not going to handle that edge case until somebody else
+           ;; complains about it.
+           (list `(makunbound ,(cadr definition))))
+       ,definition
+       ,@(cl-loop for item in items collect `(setq current-load-list (remove ',item current-load-list))))))
 
-(defun el-patch--definition (patch-definition)
+(defmacro el-patch--definition (patch-definition)
   "Activate a PATCH-DEFINITION and update `el-patch--patches'.
 PATCH-DEFINITION is a list starting with `defun', `defmacro',
 etc., which may contain patch directives."
@@ -474,14 +474,15 @@ etc., which may contain patch directives."
   (let ((definition (el-patch--resolve-definition patch-definition t)))
     ;; Then we parse out the definition type and symbol name.
     (cl-destructuring-bind (type name . body) definition
-      ;; Register the patch in our hash. We want to do this right away
-      ;; so that if there is an error then at least the user can undo
-      ;; the patch (as long as it is not too terribly wrong).
-      (unless (gethash name el-patch--patches)
-        (puthash name (make-hash-table :test #'equal) el-patch--patches))
-      (puthash type patch-definition (gethash name el-patch--patches))
-      ;; Now we actually overwrite the current definition.
-      (el-patch--stealthy-eval definition))))
+      `(progn
+         ;; Register the patch in our hash. We want to do this right away
+         ;; so that if there is an error then at least the user can undo
+         ;; the patch (as long as it is not too terribly wrong).
+         (unless (gethash ',name el-patch--patches)
+           (puthash ',name (make-hash-table :test #'equal) el-patch--patches))
+         (puthash ',type ',patch-definition (gethash ',name el-patch--patches))
+         ;; Now we actually overwrite the current definition.
+         (el-patch--stealthy-eval ,definition)))))
 
 ;; Function-like objects.
 
@@ -490,21 +491,21 @@ etc., which may contain patch directives."
   "Patch a function. The ARGS are the same as for `defun'."
   (declare (doc-string 3)
            (indent defun))
-  `(el-patch--definition ',(cons #'defun args)))
+  `(el-patch--definition ,(cons #'defun args)))
 
 ;;;###autoload
 (defmacro el-patch-defmacro (&rest args)
   "Patch a macro. The ARGS are the same as for `defmacro'."
   (declare (doc-string 3)
            (indent defun))
-  `(el-patch--definition ',(cons #'defmacro args)))
+  `(el-patch--definition ,(cons #'defmacro args)))
 
 ;;;###autoload
 (defmacro el-patch-defsubst (&rest args)
   "Patch an inline function. The ARGS are the same as for `defsubst'."
   (declare (doc-string 3)
            (indent defun))
-  `(el-patch--definition ',(cons #'defsubst args)))
+  `(el-patch--definition ,(cons #'defsubst args)))
 
 ;; Variable-like objects.
 
@@ -512,19 +513,19 @@ etc., which may contain patch directives."
 (defmacro el-patch-defvar (&rest args)
   "Patch a variable. The ARGS are the same as for `defvar'."
   (declare (indent defun))
-  `(el-patch--definition ',(cons #'defvar args)))
+  `(el-patch--definition ,(cons #'defvar args)))
 
 ;;;###autoload
 (defmacro el-patch-defconst (&rest args)
   "Patch a constant. The ARGS are the same as for `defconst'."
   (declare (indent defun))
-  `(el-patch--definition ',(cons #'defconst args)))
+  `(el-patch--definition ,(cons #'defconst args)))
 
 ;;;###autoload
 (defmacro el-patch-defcustom (&rest args)
   "Patch a customizable variable. The ARGS are the same as for `defcustom'."
   (declare (indent defun))
-  `(el-patch--definition ',(cons #'defcustom args)))
+  `(el-patch--definition ,(cons #'defcustom args)))
 
 ;; Other objects.
 
@@ -533,7 +534,7 @@ etc., which may contain patch directives."
   "Patch a minor mode. The ARGS are the same as for `define-minor-mode'."
   (declare (doc-string 2)
            (indent defun))
-  `(el-patch--definition ',(cons #'define-minor-mode args)))
+  `(el-patch--definition ,(cons #'define-minor-mode args)))
 
 ;; For convenience.
 
