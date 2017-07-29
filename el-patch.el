@@ -80,6 +80,7 @@ be installed before the features can be loaded."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Internal variables
 
+;;;###autoload
 (defvar el-patch--patches (make-hash-table :test 'equal)
   "Hash table of patches that have been defined.
 The keys are symbols naming the objects that have been patched.
