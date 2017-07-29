@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/
 
+## Unreleased
+### Changed
+* `el-patch` now computes the patched definition and generates the
+code to register and apply it at compile time, therefore incurring
+less runtime overhead.
+
 ## 1.2 (released 2017-07-23)
 ### Added
 * `el-patch` now has a Makefile for convenient byte-compilation,
