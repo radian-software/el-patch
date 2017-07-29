@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog].
 
 [Keep a Changelog]: http://keepachangelog.com/
 
+## Unreleased
+### Changed
+* `el-patch` can now be used in your init-file without being loaded at
+  runtime. In other words, the patch definition macros expand, at
+  compile time, to code that does not reference `el-patch`.
+
 ## 1.2 (released 2017-07-23)
 ### Added
 * `el-patch` now has a Makefile for convenient byte-compilation,

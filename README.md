@@ -4,29 +4,27 @@
 
 ## Table of contents
 
-<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->
+<!-- toc -->
 
+- [TL;DR](#tldr)
+  * [How do I get it](#how-do-i-get-it)
+  * [What is it](#what-is-it)
+- [Installation](#installation)
+- [Why does it exist](#why-does-it-exist)
+- [Basic usage](#basic-usage)
+- [Patch directives](#patch-directives)
+- [Defining patches](#defining-patches)
+- [Inspecting patches](#inspecting-patches)
+- [Validating patches](#validating-patches)
+- [Removing patches](#removing-patches)
+- [Lazy-loading packages](#lazy-loading-packages)
+- [Validating patches that are not loaded yet](#validating-patches-that-are-not-loaded-yet)
+- [Usage with byte-compiled init-file](#usage-with-byte-compiled-init-file)
+- [But how does it work?](#but-how-does-it-work)
+- [But how does it actually work?](#but-how-does-it-actually-work)
+- [But does it actually work?](#but-does-it-actually-work)
 
-- [el-patch](#el-patch)
-    - [Table of contents](#table-of-contents)
-    - [TL;DR](#tldr)
-        - [How do I get it](#how-do-i-get-it)
-        - [What is it](#what-is-it)
-    - [Installation](#installation)
-    - [Why does it exist](#why-does-it-exist)
-    - [Basic usage](#basic-usage)
-    - [Patch directives](#patch-directives)
-    - [Defining patches](#defining-patches)
-    - [Inspecting patches](#inspecting-patches)
-    - [Validating patches](#validating-patches)
-    - [Removing patches](#removing-patches)
-    - [Lazy-loading packages](#lazy-loading-packages)
-    - [Validating patches that are not loaded yet](#validating-patches-that-are-not-loaded-yet)
-    - [But how does it work?](#but-how-does-it-work)
-    - [But how does it actually work?](#but-how-does-it-actually-work)
-    - [But does it actually work?](#but-does-it-actually-work)
-
-<!-- markdown-toc end -->
+<!-- tocstop -->
 
 ## TL;DR
 
@@ -439,6 +437,19 @@ If you don't want all of your patches to be defined all the time, you
 can put some functions in `el-patch-post-validate-hook` to disable
 them again. For some examples of how to use these hooks, check out
 [Radian Emacs][radian].
+
+## Usage with byte-compiled init-file
+
+`el-patch` does not need to be loaded at runtime just to define
+patches. This means that if you byte-compile your init-file, then
+`el-patch` will not be loaded when you load the compiled code.
+
+For this to work, you will need to stick to defining patches with
+`el-patch-def*` and declaring features with `el-patch-feature`.
+Anything else will cause `el-patch` to be loaded at runtime.
+
+If you do not byte-compile your init-file, then all of this is
+immaterial.
 
 ## But how does it work?
 
