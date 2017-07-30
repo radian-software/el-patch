@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog].
 * `el-patch` can now be used in your init-file without being loaded at
   runtime. In other words, the patch definition macros expand, at
   compile time, to code that does not reference `el-patch`.
+* `el-patch` now uses [`elint`][elint] to run its tests and stylistic
+  checks. Lines longer than 80 characters now fail the build.
 
 ## 1.2 (released 2017-07-23)
 ### Added
@@ -142,4 +144,5 @@ The format is based on [Keep a Changelog].
 
 [melpa/melpa#4512]: https://github.com/melpa/melpa/pull/4512#issuecomment-274682089
 
+[elint]: https://github.com/raxod502/elint
 [keep a changelog]: [Keep a Changelog]: http://keepachangelog.com/

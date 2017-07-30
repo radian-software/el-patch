@@ -1,31 +1,27 @@
 .PHONY: all
-all: compile checkdoc toc
+all:
+	@elint/elint checkdoc compile longlines toc
 
 .PHONY: travis
-travis: compile checkdoc
-
-.PHONY: compile
-compile:
-	! emacs -Q --batch --eval                  \
-            "(progn                                \
-               (setq byte-compile-error-on-warn t) \
-               (push default-directory load-path)  \
-               (batch-byte-compile))"              \
-            el-patch.el                            \
-            2>&1 | grep .
+travis:
+	@elint/elint checkdoc compile longlines
 
 .PHONY: checkdoc
 checkdoc:
-	! emacs --batch --eval                      \
-            "(progn                                 \
-               (setq sentence-end-double-space nil) \
-               (checkdoc-file \"el-patch.el\"))"    \
-            2>&1 | grep .
+	@elint/elint checkdoc
+
+.PHONY: compile
+compile:
+	@elint/elint compile
+
+.PHONY: longlines
+longlines:
+	@elint/elint longlines
 
 .PHONY: toc
 toc:
-	markdown-toc -i README.md
+	@elint/elint toc
 
 .PHONY: clean
 clean:
-	rm -f straight.elc
+	@rm -f *.elc
