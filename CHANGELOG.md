@@ -3,8 +3,6 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
-[Keep a Changelog]: http://keepachangelog.com/
-
 ## Unreleased
 ### Changed
 * `el-patch` can now be used in your init-file without being loaded at
@@ -16,11 +14,11 @@ The format is based on [Keep a Changelog].
 * `el-patch` now has a Makefile for convenient byte-compilation,
   linting, and table-of-contents updating.
 * `el-patch` now checks for byte-compilation and checkdoc warnings on
-  Travis CI ([#7](https://github.com/raxod502/el-patch/issues/7)).
+  Travis CI ([#7]).
 * New macro `el-patch-feature` (unrelated to the old obsolete
   `el-patch-feature` macro that was removed) which is a convenient way
   to add feature-requiring functions to `el-patch-pre-validate-hook`
-  ([#10](https://github.com/raxod502/el-patch/issues/10)).
+  ([#10]).
 * New user option `el-patch-require-function` for advanced users only.
   It allows you to integrate `el-patch-feature` with your package
   manager, and other things like that.
@@ -30,7 +28,7 @@ The format is based on [Keep a Changelog].
 
 ### Fixed
 * Messages emitted by `el-patch-validate-all` now have correct
-  pluralization ([#9](https://github.com/raxod502/el-patch/issues/9)).
+  pluralization ([#9]).
 * The documentation on `el-patch-validate` was not updated to reflect
   its new signature in version 1.1.1. This has now been fixed.
 
@@ -65,7 +63,7 @@ The format is based on [Keep a Changelog].
 ### Fixed
 * Since version 1.1, `el-patch-validate` failed with an error in
   `el-patch--classify-definition-type`. This has been fixed
-  ([#8](https://github.com/raxod502/el-patch/issues/8)).
+  ([#8]).
 * Since version 1.1, if a patch was defined in the same file as the
   function it patched, the patch could not be validated. This has been
   fixed.
@@ -81,11 +79,10 @@ The format is based on [Keep a Changelog].
   * `el-patch-define-minor-mode`
 * New function `el-patch-get` to get a patch definition by name.
 * Objects can now be renamed in a patch using `el-patch-swap` on the
-  name ([#4](https://github.com/raxod502/el-patch/issues/4)).
+  name ([#4]).
 * Actual description in the Commentary section of `el-patch.el`
-  ([#5](https://github.com/raxod502/el-patch/issues/5)).
-* MIT license
-  ([melpa/melpa#4512](https://github.com/melpa/melpa/pull/4512#issuecomment-274682089)).
+  ([#5]).
+* MIT license ([melpa/melpa#4512]).
 * Arbitrary functions can be run (to load patches) by adding things to
   the new hook `el-patch-pre-validate-hook`. Cleanup can then be done
   in `el-patch-post-validate-hook`.
@@ -108,8 +105,7 @@ The format is based on [Keep a Changelog].
 * The patch definition macros now have their docstrings colored
   correctly by the syntax highlighter (by specifying `(declare
   (doc-string N))`).
-* `.dir-locals.el` is now ignored when validating patches
-  ([#2](https://github.com/raxod502/el-patch/issues/2)).
+* `.dir-locals.el` is now ignored when validating patches ([#2]).
 
 ## 1.0 (released 2017-01-21)
 ### Added
@@ -135,3 +131,15 @@ The format is based on [Keep a Changelog].
     * `el-patch-ediff-conflict`
   * Functions for removing patches:
     * `el-patch-unpatch`
+
+[#2]: https://github.com/raxod502/el-patch/issues/2
+[#4]: https://github.com/raxod502/el-patch/issues/4
+[#5]: https://github.com/raxod502/el-patch/issues/5
+[#7]: https://github.com/raxod502/el-patch/issues/7
+[#8]: https://github.com/raxod502/el-patch/issues/8
+[#9]: https://github.com/raxod502/el-patch/issues/9
+[#10]: https://github.com/raxod502/el-patch/issues/10
+
+[melpa/melpa#4512]: https://github.com/melpa/melpa/pull/4512#issuecomment-274682089
+
+[keep a changelog]: [Keep a Changelog]: http://keepachangelog.com/
