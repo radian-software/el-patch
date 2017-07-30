@@ -40,16 +40,16 @@
 
 ;;; Code:
 
-;; To see the outline of this file, run M-x occur with a query of four
-;; semicolons followed by a space.
+;; To see the outline of this file, run M-x outline-minor-mode and
+;; then press C-c @ C-t. To also show the top-level functions and
+;; variable declarations in each section, run M-x occur with the
+;; following query: ^;;;;* \|^(
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Libraries
 
 (require 'subr-x)
 (require 'cl-lib)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; User-facing variables
 
 (defgroup el-patch nil
@@ -77,7 +77,6 @@ be installed before the features can be loaded."
   :type 'function
   :group 'el-patch)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Internal variables
 
 ;; We autoload `el-patch--patches' so that patches can be defined at
@@ -98,7 +97,6 @@ renames a symbol.")
 (defvar el-patch--not-present 'key-is-not-present-in-hash-table
   "Value used as a default argument to `gethash'.")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Resolving patches
 
 (defmacro el-patch--with-puthash (table kvs &rest body)
@@ -197,7 +195,8 @@ their bindings."
                  (error "Right trim less than zero (%d) for `%s'"
                         trimr directive))
                 ((> (+ triml trimr) (length body))
-                 (error "Combined trim (%d + %d) greater than body length (%d) for `%s'"
+                 (error (concat "Combined trim (%d + %d) greater "
+                                "than body length (%d) for `%s'")
                         triml trimr (length body) directive)))
                (if this-new
                    (list (cl-mapcan resolve body))
@@ -216,13 +215,14 @@ their bindings."
                  (error "Non-list (%s) as first argument for `el-patch-let'"
                         bindings)))
                (el-patch--with-puthash table
-                   (mapcar (lambda (kv)
-                             (unless (symbolp (car kv))
-                               (error "Non-symbol (%s) as binding for `el-patch-let'"
-                                      (car kv)))
-                             (list (car kv)
-                                   (funcall resolve (cadr kv))))
-                           bindings)
+                   (mapcar
+                    (lambda (kv)
+                      (unless (symbolp (car kv))
+                        (error "Non-symbol (%s) as binding for `el-patch-let'"
+                               (car kv)))
+                      (list (car kv)
+                            (funcall resolve (cadr kv))))
+                    bindings)
                  (funcall resolve body))))
             ((quote el-patch-literal)
              (when (<= (length form) 1)
@@ -244,7 +244,6 @@ new version."
                      (el-patch--resolve form new))
                    (cdr patch-definition))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Validating patches
 
 (defcustom el-patch-pre-validate-hook nil
@@ -428,7 +427,6 @@ See `el-patch-validate'."
                      (format "%d patches are" warning-count))))))
     (run-hooks 'el-patch-post-validate-hook)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Applying patches
 
 (defun el-patch--compute-load-history-items (definition)
@@ -564,7 +562,6 @@ called."
          (apply el-patch-require-function ',feature ',args))
        (add-hook 'el-patch-pre-validate-hook #',defun-name))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Patch directives
 
 ;;;###autoload
@@ -642,7 +639,6 @@ Resolves to ARG, which is not processed further by el-patch."
   (declare (indent 0))
   `(error "Can't use `el-patch-literal' outside of an `el-patch'"))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Viewing patches
 
 ;;;###autoload
@@ -743,7 +739,6 @@ patch's original definition. NAME and TYPE are as returned by
           (message "No conflict")))
     (error "There is no patch for %S %S" type name)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Removing patches
 
 ;;;###autoload
@@ -757,9 +752,12 @@ patched. NAME and TYPE are as returned by `el-patch-get'."
                                         patch-definition nil)))
     (error "There is no patch for %S %S" type name)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Closing remarks
 
 (provide 'el-patch)
 
 ;;; el-patch.el ends here
+
+;; Local Variables:
+;; outline-regexp: ";;;;* "
+;; End:
