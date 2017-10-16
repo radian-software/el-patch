@@ -460,17 +460,22 @@ DEFINITION should be an unquoted list beginning with `defun',
                                (member item current-load-list))
                              (el-patch--compute-load-history-items
                               definition))))
-    `(progn
-       ,@(when (and el-patch-use-aggressive-defvar
-                    (eq (el-patch--classify-definition-type
-                         (car definition))
-                        'variable))
-           ;; Note that this won't necessarily handle
-           ;; `define-minor-mode' correctly if a custom `:variable' is
-           ;; specified. However, I'm not going to handle that edge
-           ;; case until somebody else complains about it.
-           `((makunbound ',(cadr definition))))
-       ,definition
+    `(prog2
+         ;; Using a `progn' here so that the `prog2' above will
+         ;; correctly cause the evaluated definition to be returned,
+         ;; even if `el-patch-use-aggressive-defvar' is nil.
+         (progn
+           ,@(when (and el-patch-use-aggressive-defvar
+                        (eq (el-patch--classify-definition-type
+                             (car definition))
+                            'variable))
+               ;; Note that this won't necessarily handle
+               ;; `define-minor-mode' correctly if a custom
+               ;; `:variable' is specified. However, I'm not going to
+               ;; handle that edge case until somebody else complains
+               ;; about it.
+               `((makunbound ',(cadr definition)))))
+         ,definition
        ,@(mapcar (lambda (item)
 		   `(setq current-load-list
 			  (remove ',item current-load-list)))
