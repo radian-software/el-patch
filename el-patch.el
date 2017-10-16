@@ -50,6 +50,13 @@
 (require 'subr-x)
 (require 'cl-lib)
 
+;;;; Compatibility
+
+(eval-when-compile
+  (when (version< emacs-version "26")
+    (defalias 'if-let* #'if-let)
+    (defalias 'when-let* #'when-let)))
+
 ;;;; User-facing variables
 
 (defgroup el-patch nil
@@ -440,7 +447,7 @@ Return a list of those items. Beware, uses heuristics."
        (list name))
       ((quote define-minor-mode)
        (list (cons 'defun name)
-             (or (when-let ((rest (member :variable body)))
+             (or (when-let* ((rest (member :variable body)))
                    (cadr rest))
                  name)))
       (_ (error "Unexpected definition type %S" type)))))
@@ -707,7 +714,7 @@ two buffers wordwise."
   "Show the patch for an object in Ediff.
 NAME and TYPE are as returned by `el-patch-get'."
   (interactive (el-patch--select-patch))
-  (if-let ((patch-definition (el-patch-get name type)))
+  (if-let* ((patch-definition (el-patch-get name type)))
       (let* ((old-definition (el-patch--resolve-definition
                               patch-definition nil))
              (new-definition (el-patch--resolve-definition
@@ -726,7 +733,7 @@ This is a diff between the expected and actual values of a
 patch's original definition. NAME and TYPE are as returned by
 `el-patch-get'."
   (interactive (el-patch--select-patch))
-  (if-let ((patch-definition (el-patch-get name type)))
+  (if-let* ((patch-definition (el-patch-get name type)))
       (let* ((expected-definition (el-patch--resolve-definition
                                    patch-definition nil))
              (name (cadr expected-definition))
@@ -747,7 +754,7 @@ patch's original definition. NAME and TYPE are as returned by
 This restores the original functionality of the object being
 patched. NAME and TYPE are as returned by `el-patch-get'."
   (interactive (el-patch--select-patch))
-  (if-let ((patch-definition (el-patch-get name type)))
+  (if-let* ((patch-definition (el-patch-get name type)))
       (eval `(el-patch--stealthy-eval ,(el-patch--resolve-definition
                                         patch-definition nil)))
     (error "There is no patch for %S %S" type name)))
