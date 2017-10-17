@@ -52,10 +52,13 @@
 
 ;;;; Compatibility
 
-(eval-when-compile
+(eval-and-compile
   (when (version< emacs-version "26")
-    (defalias 'if-let* #'if-let)
-    (defalias 'when-let* #'when-let)))
+    (with-no-warnings
+      (defalias 'if-let* #'if-let)
+      (defalias 'when-let* #'when-let)
+      (function-put #'if-let* 'lisp-indent-function 2)
+      (function-put #'when-let* 'lisp-indent-function 1))))
 
 ;;;; User-facing variables
 
