@@ -95,11 +95,13 @@ Suppose we want to change the third argument from `nil` to
 `company-statistics` loads its statistics file. We can do that by
 placing the following code in our `init.el`:
 
-    (el-patch-defun company-statistics--load ()
-      "Restore statistics."
-      (load company-statistics-file 'noerror
-            (el-patch-swap nil 'nomessage)
-            'nosuffix))
+    (el-patch-feature company-statistics)
+    (with-eval-after-load 'company-statistics
+      (el-patch-defun company-statistics--load ()
+        "Restore statistics."
+        (load company-statistics-file 'noerror
+              (el-patch-swap nil 'nomessage)
+              'nosuffix)))
 
 Simply calling `el-patch-defun` instead of `defun` defines a no-op
 patch: that is, it has no effect (well, not
@@ -113,6 +115,20 @@ In this case, we use the `el-patch-swap` directive. The
 definition in `company-statistics.el`), and with `'nomessage` in the
 modified definition (that is, the version that is actually evaluated
 in your init-file).
+
+Note that it is important to cause the patch to be loaded *after*
+`company-statistics` is loaded. Otherwise, when `company-statistics`
+is loaded, the patch will be overwritten!
+
+You may also be wondering what `el-patch-feature` does. The patch will
+still work without it; however, until `company-statistics` is actually
+loaded, `el-patch` will not be aware that you have defined the patch
+(since the code has not been run yet). Telling `el-patch` that you
+define a patch inside a `with-eval-after-load` for
+`company-statistics` allows [`M-x el-patch-validate-all`][validation]
+to make sure to validate *all* your patches, and not just the ones
+currently defined. See
+also [Validating patches that are not loaded yet][not-loaded-yet].
 
 ## Patch directives
 
@@ -481,6 +497,8 @@ It doesn't seem to crash [my Emacs][radian], at least.
 
 [installation]: #installation
 [lazy-loading]: #lazy-loading-packages
+[not-loaded-yet]: #validating-patches-that-are-not-loaded-yet
+[validation]: #validating-patches
 
 [advice]: https://www.gnu.org/software/emacs/manual/html_node/elisp/Advising-Functions.html
 [company-statistics]: https://github.com/company-mode/company-statistics
