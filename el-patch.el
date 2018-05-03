@@ -233,8 +233,8 @@ their bindings."
              (let ((car-forms (funcall resolve (car form)))
                    (cdr-forms (funcall resolve (cdr form))))
                (cond
-                ((null car-forms) (list cdr-forms))
-                ((null cdr-forms) (list car-forms))
+                ((null car-forms) cdr-forms)
+                ((null cdr-forms) car-forms)
                 (t
                  (let ((forms (nconc car-forms (butlast cdr-forms))))
                    (setf (nthcdr (length forms) forms)
