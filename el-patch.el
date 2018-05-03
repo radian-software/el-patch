@@ -134,8 +134,8 @@ nil; otherwise resolve in favor of the new version. TABLE is a
 hash table of `el-patch-let' bindings, which maps symbols to
 their bindings."
   (let ((table (or table (make-hash-table :test 'equal))))
-    (if (listp form)
-        (let* ((directive (nth 0 form))
+    (if (consp form)
+        (let* ((directive (car form))
                (this-directive (pcase directive
                                  ('el-patch-remove 'el-patch-add)
                                  ('el-patch-splice 'el-patch-wrap)
@@ -229,7 +229,17 @@ their bindings."
                (error "Not enough arguments (%d) for `el-patch-literal'"
                       (1- (length form))))
              (cdr form))
-            (_ (list (cl-mapcan resolve form)))))
+            (_
+             (let ((car-forms (funcall resolve (car form)))
+                   (cdr-forms (funcall resolve (cdr form))))
+               (cond
+                ((null car-forms) (list cdr-forms))
+                ((null cdr-forms) (list car-forms))
+                (t
+                 (let ((forms (nconc car-forms (butlast cdr-forms))))
+                   (setf (nthcdr (length forms) forms)
+                         (car (last cdr-forms)))
+                   (list forms))))))))
       (or (gethash form table)
           (list form)))))
 

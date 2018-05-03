@@ -11,6 +11,11 @@ The format is based on [Keep a Changelog].
 * `el-patch` now uses [`elint`][elint] to run its tests and stylistic
   checks. Lines longer than 80 characters now fail the build.
 
+### Fixed
+* `el-patch` previously failed with an error if you attempted to patch
+  an object which used a literal cons cell or improper list in its
+  definition. This has been fixed.
+
 ## 1.2 (released 2017-07-23)
 ### Added
 * `el-patch` now has a Makefile for convenient byte-compilation,

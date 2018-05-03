@@ -254,10 +254,10 @@ also [Validating patches that are not loaded yet][not-loaded-yet].
 * `(el-patch-literal ARG)`
 
   Hopefully this will never happen, but you might need to use
-  `el-patch` to modify functions that use symbols like `el-patch-add`
-  at the beginning of lists. To avoid that, you can wrap a form in
-  `el-patch-literal` to prevent anything within from being interpreted
-  by `el-patch`. For example, the following form:
+  `el-patch` to modify functions that use symbols like `el-patch-add`.
+  In this case, you can wrap a form in `el-patch-literal` to prevent
+  anything within from being interpreted by `el-patch`. For example,
+  the following form:
 
       (foo (el-patch-literal (el-patch-add bar baz)) quux)
 
@@ -265,7 +265,8 @@ also [Validating patches that are not loaded yet][not-loaded-yet].
 
       (foo (el-patch-add bar baz) quux)
 
-  in both the original and modified definitions.
+  in both the original and modified definitions. Thus, you can happily
+  write `el-patches` that patch other `el-patch` definitions :)
 
 ## Defining patches
 
