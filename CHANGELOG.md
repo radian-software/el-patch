@@ -7,9 +7,12 @@ The format is based on [Keep a Changelog].
 ### Changed
 * `el-patch` can now be used in your init-file without being loaded at
   runtime. In other words, the patch definition macros expand, at
-  compile time, to code that does not reference `el-patch`.
+  compile time, to code that does not reference `el-patch` ([#11]).
 * `el-patch` now uses [`elint`][elint] to run its tests and stylistic
   checks. Lines longer than 80 characters now fail the build.
+* `el-patch` forms now have a well-defined return value, namely the
+  same as would have been returned by the corresponding non-`el-patch`
+  form ([#15]).
 
 ### Fixed
 * `el-patch` previously failed with an error if you attempted to patch
@@ -146,6 +149,8 @@ The format is based on [Keep a Changelog].
 [#8]: https://github.com/raxod502/el-patch/issues/8
 [#9]: https://github.com/raxod502/el-patch/issues/9
 [#10]: https://github.com/raxod502/el-patch/issues/10
+[#11]: https://github.com/raxod502/el-patch/pull/11
+[#15]: https://github.com/raxod502/el-patch/issues/15
 
 [melpa/melpa#4512]: https://github.com/melpa/melpa/pull/4512#issuecomment-274682089
 
