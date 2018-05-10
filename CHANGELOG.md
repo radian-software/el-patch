@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
-## Unreleased
+## 2.0 (released 2018-05-10)
 ### Changed
 * `el-patch` can now be used in your init-file without being loaded at
   runtime. In other words, the patch definition macros expand, at
