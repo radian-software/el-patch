@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog].
 ### Fixed
 * `el-patch` previously failed with an error if you attempted to patch
   an object which used a literal cons cell or improper list in its
-  definition. This has been fixed.
+  definition. This has been fixed ([#13]).
 
 ## 1.2 (released 2017-07-23)
 ### Added
@@ -150,6 +150,7 @@ The format is based on [Keep a Changelog].
 [#9]: https://github.com/raxod502/el-patch/issues/9
 [#10]: https://github.com/raxod502/el-patch/issues/10
 [#11]: https://github.com/raxod502/el-patch/pull/11
+[#13]: https://github.com/raxod502/el-patch/issues/13
 [#15]: https://github.com/raxod502/el-patch/issues/15
 
 [melpa/melpa#4512]: https://github.com/melpa/melpa/pull/4512#issuecomment-274682089
