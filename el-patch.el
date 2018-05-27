@@ -64,8 +64,7 @@
 This means that `el-patch-defvar', `el-patch-defconst', and
 `el-patch-defcustom' will unbind the old variable definition
 before evaluating the new one."
-  :type 'boolean
-  :group 'el-patch)
+  :type 'boolean)
 
 (defcustom el-patch-require-function #'require
   "Function to `require' a feature in `el-patch-pre-validate-hook'.
@@ -74,8 +73,7 @@ quoted literals, and it should load the feature. This function
 might be useful if, for example, some of your features are
 provided by lazy-installed packages, and those packages need to
 be installed before the features can be loaded."
-  :type 'function
-  :group 'el-patch)
+  :type 'function)
 
 ;;;; Internal variables
 
@@ -262,8 +260,7 @@ Also run before `el-patch-validate' if a prefix argument is
 provided. This hook should contain functions that make sure all
 of your patches are defined (for example, you might need to load
 some features if your patches are lazily defined)."
-  :type 'hook
-  :group 'el-patch)
+  :type 'hook)
 
 (defcustom el-patch-post-validate-hook nil
   "Hook run after `el-patch-validate-all'.
@@ -272,8 +269,7 @@ provided. This hook should contain functions that undo any
 patching that might have taken place in
 `el-patch-pre-validate-hook', if you do not want the patches to
 be defined permanently."
-  :type 'hook
-  :group 'el-patch)
+  :type 'hook)
 
 (defun el-patch--classify-definition-type (type)
   "Classifies a definition TYPE as a `function' or `variable'.
