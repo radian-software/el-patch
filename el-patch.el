@@ -1,4 +1,4 @@
-;;; el-patch.el --- Future-proof your Emacs Lisp customizations!
+;;; el-patch.el --- Future-proof your Elisp. -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2016 Radon Rosborough
 
@@ -582,6 +582,7 @@ In the original definition, the ARGS and their containing form
 are removed. In the new definition, the ARGS are spliced into the
 containing s-expression."
   (declare (indent 0))
+  (ignore args)
   `(error "Can't use `el-patch-add' outside of an `el-patch'"))
 
 ;;;###autoload
@@ -591,6 +592,7 @@ In the original definition, the ARGS are spliced into the
 containing s-expression. In the new definition, the ARGS and
 their containing form are removed."
   (declare (indent 0))
+  (ignore args)
   `(error "Can't use `el-patch-remove' outside of an `el-patch'"))
 
 ;;;###autoload
@@ -599,6 +601,7 @@ their containing form are removed."
 In the original definition, OLD is spliced into the containing
 s-expression. In the new definition, NEW is spliced instead."
   (declare (indent 0))
+  (ignore old new)
   `(error "Can't use `el-patch-swap' outside of an `el-patch'"))
 
 ;;;###autoload
@@ -614,6 +617,7 @@ the ARGS are removed first. If TRIMR is provided, the last TRIMR
 are also removed. In the new definition, the ARGS and their
 containing list are spliced into the containing s-expression."
   (declare (indent defun))
+  (ignore triml trimr args)
   `(error "Can't use `el-patch-wrap' outside of an `el-patch'"))
 
 ;;;###autoload
@@ -630,6 +634,7 @@ s-expression. If TRIML is provided, the first TRIML of the ARGS
 are removed first. If TRIMR is provided, the last TRIMR are also
 removed."
   (declare (indent defun))
+  (ignore triml trimr args)
   `(error "Can't use `el-patch-splice' outside of an `el-patch'"))
 
 ;;;###autoload
@@ -641,6 +646,7 @@ that are also patch directives, but the bindings will not have
 effect if the symbols are used at the beginning of a list (they
 will act as patch directives)."
   (declare (indent 1))
+  (ignore varlist arg)
   `(error "Can't use `el-patch-let' outside of an `el-patch'"))
 
 ;;;###autoload
@@ -648,6 +654,7 @@ will act as patch directives)."
   "Patch directive for treating patch directives literally.
 Resolves to ARG, which is not processed further by el-patch."
   (declare (indent 0))
+  (ignore arg)
   `(error "Can't use `el-patch-literal' outside of an `el-patch'"))
 
 ;;;; Viewing patches
@@ -673,7 +680,7 @@ of the definition."
     (let* ((name (intern (completing-read
                           "Which patch? "
                           options
-                          (lambda (elt) t)
+                          nil
                           'require-match)))
            (patch-hash (gethash name el-patch--patches))
            (options (mapcar #'symbol-name
@@ -685,7 +692,7 @@ of the definition."
                       (_ (completing-read
                           "Which version? "
                           options
-                          (lambda (elt) t)
+                          nil
                           'require-match))))))))
 
 (defun el-patch--ediff-forms (name1 form1 name2 form2)
