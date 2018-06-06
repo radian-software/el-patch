@@ -17,4 +17,4 @@ install:
   - export PATH="/tmp/emacs-$EMACS_VERSION-travis/bin:$PATH"
   - emacs --version
 script:
-  - make travis
+  - make

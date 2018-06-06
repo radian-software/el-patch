@@ -4,6 +4,7 @@
 
 ## Table of contents
 
+<!-- longlines-start -->
 <!-- toc -->
 
 - [TL;DR](#tldr)
@@ -25,6 +26,7 @@
 - [But does it actually work?](#but-does-it-actually-work)
 
 <!-- tocstop -->
+<!-- longlines-stop -->
 
 ## TL;DR
 
