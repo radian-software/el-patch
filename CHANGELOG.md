@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
+## Unreleased
+### Internal changes
+* `el-patch` now uses lexical binding.
+* `el-patch` is now tested on all supported Emacs versions.
+* `el-patch` no longer uses the deprecated [`elint`][elint] testing
+  framework.
+
 ## 2.0 (released 2018-05-10)
 ### Changed
 * `el-patch` can now be used in your init-file without being loaded at
