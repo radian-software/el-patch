@@ -253,7 +253,7 @@ also [Validating patches that are not loaded yet][not-loaded-yet].
 
   Well, you can. Welcome to `el-patch`.
 
-* `(el-patch-literal ARG)`
+* `(el-patch-literal ARGS...)`
 
   Hopefully this will never happen, but you might need to use
   `el-patch` to modify functions that use symbols like `el-patch-add`.

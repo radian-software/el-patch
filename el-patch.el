@@ -659,11 +659,11 @@ will act as patch directives)."
   `(error "Can't use `el-patch-let' outside of an `el-patch'"))
 
 ;;;###autoload
-(defmacro el-patch-literal (arg)
+(defmacro el-patch-literal (&rest args)
   "Patch directive for treating patch directives literally.
 Resolves to ARG, which is not processed further by el-patch."
   (declare (indent 0))
-  (ignore arg)
+  (ignore args)
   `(error "Can't use `el-patch-literal' outside of an `el-patch'"))
 
 ;;;; Viewing patches

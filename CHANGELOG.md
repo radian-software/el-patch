@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog].
 * `el-patch-let` now allows more than one body form; all body forms
   are spliced into the containing s-expression. This is fully
   backwards compatible.
+* `el-patch-literal` always allowed more than one body form, but this
+  fact is now documented.
 
 ### Bugfixes
 * Using `el-patch-let` could previously cause a circular list error.
