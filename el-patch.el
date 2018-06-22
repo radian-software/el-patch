@@ -124,6 +124,14 @@ of evaluating the last form in BODY."
              (remhash (car kv) table)
            (puthash (car kv) (cadr kv) table))))))
 
+(defun el-patch--copy-semitree (tree)
+  "Copy a list. The list may be improper.
+This function lives halfway between `copy-sequence' and
+`copy-tree', since it only recurses into cdrs."
+  (if (consp tree)
+      (cons (car tree) (el-patch--copy-semitree (cdr tree)))
+    tree))
+
 (defun el-patch--resolve (form new &optional table)
   "Resolve a patch FORM.
 Return a list of forms to be spliced into the surrounding
@@ -235,8 +243,12 @@ their bindings."
                    (setf (nthcdr (length forms) forms)
                          (car (last cdr-forms)))
                    (list forms))))))))
-      (or (gethash form table)
-          (list form)))))
+      (or
+       ;; Copy since otherwise we may end up with the same list object
+       ;; returned multiple times, which is not okay since lists
+       ;; returned by this function may be modified destructively.
+       (el-patch--copy-semitree (gethash form table))
+       (list form)))))
 
 (defun el-patch--resolve-definition (patch-definition new)
   "Resolve a PATCH-DEFINITION.

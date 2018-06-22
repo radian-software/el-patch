@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog].
   are spliced into the containing s-expression. This is fully
   backwards compatible.
 
+### Bugfixes
+* Using `el-patch-let` could previously cause a circular list error.
+  For example:
+
+      (el-patch-let ((x y)) (x x x))
+
+  That has now been fixed.
+
 ## 2.0.1 (released 2018-06-21)
 ### Internal changes
 * `el-patch` now uses lexical binding.
