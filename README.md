@@ -157,7 +157,7 @@ also [Validating patches that are not loaded yet][not-loaded-yet].
   entire form is replaced with `OLD`, and in the modified definition,
   the entire form is replaced with `NEW`.
 
-* `(el-patch-wrap [TRIML [TRIMR]] ARGS)`
+* `(el-patch-wrap [TRIML [TRIMR]] ARGS...)`
 
   Wrap forms in a list, optionally prepending or postpending
   additional forms. This is the most complicated directive, so an
@@ -194,14 +194,14 @@ also [Validating patches that are not loaded yet][not-loaded-yet].
   one, two, or three—thus eliminating any ambiguity about which
   argument is which.
 
-* `(el-patch-splice [TRIML [TRIMR]] ARGS)`
+* `(el-patch-splice [TRIML [TRIMR]] ARGS...)`
 
   Splice forms into their containing form, optionally removing some
   from the beginning and end first. This is just like `el-patch-wrap`,
   except that the roles of the original and modified definitions are
   exchanged.
 
-* `(el-patch-let VARLIST ARGS)`
+* `(el-patch-let VARLIST ARGS...)`
 
   Sometimes you need to restructure a form in an inconvenient way. For
   example, suppose you need to turn the following form:
