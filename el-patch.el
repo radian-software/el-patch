@@ -201,13 +201,10 @@ their bindings."
                  (cl-mapcan resolve (nthcdr triml (butlast body trimr))))))
             ((quote el-patch-let)
              (let ((bindings (nth 1 form))
-                   (body (nth 2 form)))
+                   (body (nthcdr 2 form)))
                (cond
                 ((<= (length form) 2)
                  (error "Not enough arguments (%d) for `el-patch-let'"
-                        (1- (length form))))
-                ((>= (length form) 4)
-                 (error "Too many arguments (%d) for `el-patch-let'"
                         (1- (length form))))
                 ((not (listp bindings))
                  (error "Non-list (%s) as first argument for `el-patch-let'"
@@ -221,7 +218,7 @@ their bindings."
                       (list (car kv)
                             (funcall resolve (cadr kv))))
                     bindings)
-                 (funcall resolve body))))
+                 (cl-mapcan resolve body))))
             ((quote el-patch-literal)
              (when (<= (length form) 1)
                (error "Not enough arguments (%d) for `el-patch-literal'"
@@ -638,15 +635,15 @@ removed."
   `(error "Can't use `el-patch-splice' outside of an `el-patch'"))
 
 ;;;###autoload
-(defmacro el-patch-let (varlist arg)
+(defmacro el-patch-let (varlist &rest args)
   "Patch directive for creating local el-patch bindings.
-Creates local bindings according to VARLIST, then resolves to ARG
-in both the original and new definitions. You may bind symbols
+Creates local bindings according to VARLIST, then splices ARGS
+into both the original and new definitions. You may bind symbols
 that are also patch directives, but the bindings will not have
 effect if the symbols are used at the beginning of a list (they
 will act as patch directives)."
   (declare (indent 1))
-  (ignore varlist arg)
+  (ignore varlist args)
   `(error "Can't use `el-patch-let' outside of an `el-patch'"))
 
 ;;;###autoload

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
+## Unreleased
+### New features
+* `el-patch-let` now allows more than one body form; all body forms
+  are spliced into the containing s-expression. This is fully
+  backwards compatible.
+
 ## 2.0.1 (released 2018-06-21)
 ### Internal changes
 * `el-patch` now uses lexical binding.

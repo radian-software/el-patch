@@ -201,7 +201,7 @@ also [Validating patches that are not loaded yet][not-loaded-yet].
   except that the roles of the original and modified definitions are
   exchanged.
 
-* `(el-patch-let VARLIST ARG)`
+* `(el-patch-let VARLIST ARGS)`
 
   Sometimes you need to restructure a form in an inconvenient way. For
   example, suppose you need to turn the following form:
