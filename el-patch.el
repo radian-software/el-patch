@@ -125,7 +125,7 @@ of evaluating the last form in BODY."
            (puthash (car kv) (cadr kv) table))))))
 
 (defun el-patch--copy-semitree (tree)
-  "Copy a list. The list may be improper.
+  "Copy the list TREE, and return the copy. The list may be improper.
 This function lives halfway between `copy-sequence' and
 `copy-tree', since it only recurses into cdrs."
   (if (consp tree)
@@ -661,7 +661,8 @@ will act as patch directives)."
 ;;;###autoload
 (defmacro el-patch-literal (&rest args)
   "Patch directive for treating patch directives literally.
-Resolves to ARG, which is not processed further by el-patch."
+ARGS are sliced into the containing s-expression, but are not
+processed further by el-patch."
   (declare (indent 0))
   (ignore args)
   `(error "Can't use `el-patch-literal' outside of an `el-patch'"))
