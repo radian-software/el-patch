@@ -607,12 +607,14 @@ The ARGS are the same as for `%S'."
 ;;;###autoload
 (el-patch-deftype defconst
   :classify el-patch-classify-variable
-  :declare ((indent defun)))
+  :declare ((doc-string 3)
+            (indent defun)))
 
 ;;;###autoload
 (el-patch-deftype defcustom
   :classify el-patch-classify-variable
-  :declare ((indent defun)))
+  :declare ((doc-string 3)
+            (indent defun)))
 
 ;;;###autoload
 (el-patch-deftype define-minor-mode
@@ -641,7 +643,8 @@ The ARGS are the same as for `%S'."
 ;;;###autoload
 (el-patch-deftype defvar
   :classify el-patch-classify-variable
-  :declare ((indent defun)))
+  :declare ((doc-string 3)
+            (indent defun)))
 
 ;;;###autoload
 (defmacro el-patch-feature (feature &rest args)
