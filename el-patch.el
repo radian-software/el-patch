@@ -661,7 +661,7 @@ will act as patch directives)."
 ;;;###autoload
 (defmacro el-patch-literal (&rest args)
   "Patch directive for treating patch directives literally.
-ARGS are sliced into the containing s-expression, but are not
+ARGS are spliced into the containing s-expression, but are not
 processed further by el-patch."
   (declare (indent 0))
   (ignore args)
