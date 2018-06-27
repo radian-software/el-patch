@@ -271,7 +271,7 @@ their bindings."
              (when (<= (length form) 1)
                (error "Not enough arguments (%d) for `el-patch-concat'"
                       (1- (length form))))
-             (apply #'concat (cl-mapcan resolve (cdr form))))
+             (list (apply #'concat (cl-mapcan resolve (cdr form)))))
             (_
              (let ((car-forms (funcall resolve (car form)))
                    (cdr-forms (funcall resolve (cdr form))))
