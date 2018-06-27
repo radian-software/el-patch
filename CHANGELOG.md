@@ -16,6 +16,10 @@ The format is based on [Keep a Changelog].
 * You may now define functions analogous to `el-patch-defun` for your
   own definition types using the new `el-patch-deftype` macro, which
   operates on the new user option `el-patch-deftype-alist` ([#24]).
+* `el-patch` now provides integration with `use-package`, controlled
+  by the variable `el-patch-enable-use-package-integration` and the
+  minor mode `el-patch-use-package-mode`. Two new keywords,
+  `:init/el-patch` and `:config/el-patch`, are defined ([#25]).
 
 ### Enhancements
 * When a definition is patched, `el-patch` now automatically appends a
@@ -32,6 +36,7 @@ The format is based on [Keep a Changelog].
 
 [#14]: https://github.com/raxod502/el-patch/issues/14
 [#24]: https://github.com/raxod502/el-patch/issues/24
+[#25]: https://github.com/raxod502/el-patch/issues/25
 
 ## 2.0.1 (released 2018-06-21)
 ### Internal changes

@@ -50,6 +50,11 @@
 (require 'subr-x)
 (require 'cl-lib)
 
+(defvar use-package-keywords)
+
+(declare-function use-package-normalize-forms "use-package")
+(declare-function use-package-process-keywords "use-package")
+
 ;;;; User-facing variables
 
 ;;;###autoload
@@ -109,6 +114,13 @@ optional."
                                   (const :declare)
                                   (const :macro-name))
                        :value-type sexp)))
+
+(defcustom el-patch-enable-use-package-integration t
+  "Non-nil means to automatically enable `use-package' integration.
+This variable has an effect only when the `el-patch' library is
+loaded. You can toggle the `use-package' integration later using
+\\[el-patch-use-package-mode]."
+  :type 'boolean)
 
 ;;;; Internal variables
 
@@ -888,6 +900,68 @@ patched. NAME and TYPE are as returned by `el-patch-get'."
                 patch-definition nil)
               "This function was patched and then unpatched by `el-patch'."))
     (error "There is no patch for %S %S" type name)))
+
+;;;; use-package integration
+
+(defun el-patch--use-package-handler
+    (base-keyword name _keyword args rest state)
+  "When applied partially, return a `use-package' handler.
+BASE-KEYWORD is either `:init' or `:config'. The remaining
+arguments NAME, KEYWORD, ARGS, REST, and STATE are explained by
+the `use-package' documentation."
+  (setq rest
+        (plist-put
+         rest base-keyword
+         (append
+          (cl-mapcan
+           (lambda (arg)
+             (when (and (consp arg)
+                        (assq (car arg) el-patch-deftype-alist))
+               (list
+                (cons (or
+                       (plist-get
+                        (alist-get (car arg) el-patch-deftype-alist)
+                        :macro-name)
+                       (intern (format "el-patch-%S" (car arg))))
+                      (cdr arg)))))
+           args)
+          (plist-get rest base-keyword))))
+  (setq rest
+        (plist-put
+         rest :init
+         (cons `(el-patch-feature ,name)
+               (plist-get rest :init))))
+  (use-package-process-keywords name rest state))
+
+(define-minor-mode el-patch-use-package-mode
+  "Minor mode to enable `use-package' integration for `el-patch'.
+This mode is enabled or disabled automatically when the
+`el-patch' library is loaded, according to the value of
+`el-patch-enable-use-package-integration'."
+  :global t
+  (if el-patch-use-package-mode
+      (with-eval-after-load 'use-package-core
+        (dolist (kw '(:init/el-patch :config/el-patch))
+          (cl-pushnew kw use-package-keywords))
+        (dolist (fun '(use-package-normalize/:init/el-patch
+                       use-package-normalize/:config/el-patch))
+          (defalias fun #'use-package-normalize-forms))
+        (defalias 'use-package-handler/:init/el-patch
+          (apply-partially #'el-patch--use-package-handler :init))
+        (defalias 'use-package-handler/:config/el-patch
+          (apply-partially #'el-patch--use-package-handler :config)))
+    (with-eval-after-load 'use-package-core
+      (dolist (kw '(:init/el-patch :config/el-patch))
+        (setq use-package-keywords (delq kw use-package-keywords)))
+      (dolist (fun '(use-package-normalize/:init/el-patch
+                     use-package-normalize/:config/el-patch
+                     use-package-handler/:init/el-patch
+                     use-package-handler/:config/el-patch))
+        (fmakunbound fun)))))
+
+(if el-patch-enable-use-package-integration
+    (el-patch-use-package-mode +1)
+  (el-patch-use-package-mode -1))
 
 ;;;; Closing remarks
 

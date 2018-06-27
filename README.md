@@ -21,6 +21,7 @@
 - [Removing patches](#removing-patches)
 - [Lazy-loading packages](#lazy-loading-packages)
 - [Validating patches that are not loaded yet](#validating-patches-that-are-not-loaded-yet)
+- [Integration with `use-package`](#integration-with-use-package)
 - [Usage with byte-compiled init-file](#usage-with-byte-compiled-init-file)
 - [But how does it work?](#but-how-does-it-work)
 - [But how does it actually work?](#but-how-does-it-actually-work)
@@ -497,6 +498,25 @@ If you don't want all of your patches to be defined all the time, you
 can put some functions in `el-patch-post-validate-hook` to disable
 them again. For some examples of how to use these hooks, check out
 [Radian Emacs][radian].
+
+## Integration with `use-package`
+
+You can enable the `use-package` integration of `el-patch` by toggling
+the global minor mode `el-patch-use-package-mode`, but it is more
+convenient to set the variable
+`el-patch-enable-use-package-integration` (defaults to non-nil) and
+then the mode will be toggled appropriately once `el-patch` and
+`use-package` have both been loaded.
+
+The `use-package` integration defines two new `use-package` keywords,
+`:init/el-patch` and `:config/el-patch`. They are analogous to `:init`
+and `:config`, but each top-level form is converted into an `el-patch`
+form: for example, a `defun` will be turned into an `el-patch-defun`,
+and so on. (Definition forms that have no corresponding `el-patch`
+macro are left as is.) The resulting code is prepended to the code in
+`:init` or `:config`, respectively. Also, if you provide either
+keyword, then a call to `el-patch-feature` is inserted into the
+`:init` section.
 
 ## Usage with byte-compiled init-file
 
