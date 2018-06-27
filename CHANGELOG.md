@@ -17,6 +17,11 @@ The format is based on [Keep a Changelog].
   own definition types using the new `el-patch-deftype` macro, which
   operates on the new user option `el-patch-deftype-alist` ([#24]).
 
+### Enhancements
+* When a definition is patched, `el-patch` now automatically appends a
+  note to the end of the docstring indicating that a patch was made
+  ([#14]).
+
 ### Bugfixes
 * Using `el-patch-let` could previously cause a circular list error.
   For example:

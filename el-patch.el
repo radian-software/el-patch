@@ -484,19 +484,32 @@ See `el-patch-validate'."
 
 ;;;; Applying patches
 
-(defmacro el-patch--stealthy-eval (definition)
+(defmacro el-patch--stealthy-eval (definition &optional docstring-note)
   "Evaluate DEFINITION without updating `load-history'.
 DEFINITION should be an unquoted list beginning with `defun',
-`defmacro', `define-minor-mode', etc."
+`defmacro', `define-minor-mode', etc. DOCSTRING-NOTE, if given,
+is a sentence to put in brackets at the end of the docstring."
   (let* ((type (nth 0 definition))
          (props (alist-get type el-patch-deftype-alist)))
     (unless props
       (error "Unregistered definition type `%S'" type))
-    (let ((classify (plist-get props :classify)))
+    (let* ((classify (plist-get props :classify))
+           (docstring-idx
+            (nth 1 (assq 'doc-string (plist-get props :declare)))))
       (unless classify
         (error
          "Definition type `%S' has no `:classify' in `el-patch-deftype-alist'"
          type))
+      (when (and docstring-note docstring-idx)
+        (let ((old-docstring (nth docstring-idx definition)))
+          (when (stringp old-docstring)
+            (let ((new-docstring
+                   (concat
+                    old-docstring
+                    (format "\n\n[%s]" docstring-note))))
+              (setq definition (cl-copy-list definition))
+              (setf (nth docstring-idx definition)
+                    new-docstring)))))
       (let* ((classification
               (funcall classify definition))
              (items
@@ -548,7 +561,9 @@ PATCH-DEFINITION is an unquoted list starting with `defun',
            (puthash ',name (make-hash-table :test #'equal) el-patch--patches))
          (puthash ',type ',patch-definition (gethash ',name el-patch--patches))
          ;; Now we actually overwrite the current definition.
-         (el-patch--stealthy-eval ,definition)))))
+         (el-patch--stealthy-eval
+          ,definition
+          "This function was patched by `el-patch'.")))))
 
 (defun el-patch-classify-variable (definition)
   "Classify the items defined by a variable DEFINITION.
@@ -868,8 +883,10 @@ This restores the original functionality of the object being
 patched. NAME and TYPE are as returned by `el-patch-get'."
   (interactive (el-patch--select-patch))
   (if-let ((patch-definition (el-patch-get name type)))
-      (eval `(el-patch--stealthy-eval ,(el-patch--resolve-definition
-                                        patch-definition nil)))
+      (eval `(el-patch--stealthy-eval
+              ,(el-patch--resolve-definition
+                patch-definition nil)
+              "This function was patched and then unpatched by `el-patch'."))
     (error "There is no patch for %S %S" type name)))
 
 ;;;; Closing remarks
