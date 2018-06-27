@@ -543,7 +543,7 @@ is a sentence to put in brackets at the end of the docstring."
              ;; nil.
              (progn
                ,@(when el-patch-use-aggressive-defvar
-                   (mapcan
+                   (cl-mapcan
                     (lambda (entry)
                       (when (eq (car entry) 'variable)
                         `((makunbound ',(cdr entry)))))
