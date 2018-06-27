@@ -232,6 +232,11 @@ their bindings."
                (error "Not enough arguments (%d) for `el-patch-literal'"
                       (1- (length form))))
              (cdr form))
+            ((quote el-patch-concat)
+             (when (<= (length form) 1)
+               (error "Not enough arguments (%d) for `el-patch-concat'"
+                      (1- (length form))))
+             (apply #'concat (cl-mapcan resolve (cdr form))))
             (_
              (let ((car-forms (funcall resolve (car form)))
                    (cdr-forms (funcall resolve (cdr form))))
@@ -666,6 +671,16 @@ processed further by el-patch."
   (declare (indent 0))
   (ignore args)
   `(error "Can't use `el-patch-literal' outside of an `el-patch'"))
+
+;;;###autoload
+(defmacro el-patch-concat (&rest args)
+  "Patch directive for modifying string literals.
+ARGS should resolve to strings; those strings are passed to
+`concat' and spliced into the containing s-expression in both the
+original and new definitions."
+  (declare (indent 0))
+  (ignore args)
+  `(error "Can't use `el-patch-concat' outside of an `el-patch'"))
 
 ;;;; Viewing patches
 

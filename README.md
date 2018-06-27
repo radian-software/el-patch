@@ -270,6 +270,35 @@ also [Validating patches that are not loaded yet][not-loaded-yet].
   in both the original and modified definitions. Thus, you can happily
   write `el-patches` that patch other `el-patch` definitions :)
 
+* `(el-patch-concat ARGS...)`
+
+  This patch directive lets you concatenate strings. It is useful for
+  modifying long string literals. For example, let's say that you have
+  a string
+
+      "Pretend this is a very long string we only want to write once"
+
+  in a function you are patching. To change just a small part of this
+  string, you could use `el-patch-swap` directly:
+
+      (el-patch-swap
+        "Pretend this is a very long string we only want to write once"
+        "Pretend this is a really long string we only want to write once")
+
+  But this repeats the rest of the string, violating DRY. Imagine if
+  you just want to add a sentence to a 40-line docstring! Here's an
+  alternative:
+
+      (el-patch-concat
+        "Pretend this is a "
+        (el-patch-swap "very" "really")
+        " long string we only want to write once")
+
+  Basically, `el-patch-concat` just resolves all of its arguments,
+  which may contain arbitrary patch directives, and then concatenates
+  them as strings and splices the result into *both* the original and
+  modified definition.
+
 ## Defining patches
 
 To patch a function, start by copying its definition into your

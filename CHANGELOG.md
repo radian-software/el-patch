@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog].
   backwards compatible.
 * `el-patch-literal` always allowed more than one body form, but this
   fact is now documented.
+* The new patch directive `el-patch-concat` may be used to modify
+  string literals in a patch without repeating their contents twice
+  ([#14]).
 
 ### Bugfixes
 * Using `el-patch-let` could previously cause a circular list error.
@@ -18,6 +21,8 @@ The format is based on [Keep a Changelog].
       (el-patch-let ((x y)) (x x x))
 
   That has now been fixed.
+
+[#14]: https://github.com/raxod502/el-patch/issues/14
 
 ## 2.0.1 (released 2018-06-21)
 ### Internal changes
