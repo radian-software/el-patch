@@ -334,9 +334,19 @@ Some warnings:
   behavior and force the patches to reset the value of the variable,
   if it is already defined, set `el-patch-use-aggressive-defvar`.
 
-* Using `el-patch-use-aggressive-defvar` together with a custom
-  `:variable` in `el-patch-define-minor-mode` is not currently
-  supported. If you have a need for this use case, open an issue.
+You can patch any definition form, not just those above. To register
+your own definition types, use the `el-patch-deftype` macro. For
+example, the `el-patch-defun` function is defined as follows:
+
+    (el-patch-deftype defun
+      :classify el-patch-classify-function
+      :declare ((doc-string 3)
+                (indent defun)))
+
+See the docstrings on the macro `el-patch-deftype` and the variable
+`el-patch-deftype-alist` for more detailed information. See also the
+source code of `el-patch` for examples of how to use
+`el-patch-deftype`.
 
 ## Inspecting patches
 

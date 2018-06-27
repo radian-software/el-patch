@@ -13,6 +13,9 @@ The format is based on [Keep a Changelog].
 * The new patch directive `el-patch-concat` may be used to modify
   string literals in a patch without repeating their contents twice
   ([#14]).
+* You may now define functions analogous to `el-patch-defun` for your
+  own definition types using the new `el-patch-deftype` macro, which
+  operates on the new user option `el-patch-deftype-alist` ([#24]).
 
 ### Bugfixes
 * Using `el-patch-let` could previously cause a circular list error.
@@ -23,6 +26,7 @@ The format is based on [Keep a Changelog].
   That has now been fixed.
 
 [#14]: https://github.com/raxod502/el-patch/issues/14
+[#24]: https://github.com/raxod502/el-patch/issues/24
 
 ## 2.0.1 (released 2018-06-21)
 ### Internal changes
