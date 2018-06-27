@@ -1,4 +1,0 @@
-task checkdoc *.el
-task compile *.el
-task longlines *.el *.md *.yml .gitignore .gitmodules checkers/* Makefile
-task toc README.md

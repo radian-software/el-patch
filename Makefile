@@ -12,7 +12,7 @@ all: compile checkdoc longlines
 compile:
 	@for file in $(for_compile); do \
 	    echo "[compile] $$file" ;\
-	    $(EMACS) -Q --batch -L . -L stub -f batch-byte-compile $$file 2>&1 \
+	    $(EMACS) -Q --batch -L . -f batch-byte-compile $$file 2>&1 \
 	        | grep -v "^Wrote" \
 	        | grep . && exit 1 || true ;\
 	done
