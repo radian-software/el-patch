@@ -1,5 +1,9 @@
 dist: trusty
 sudo: false
+addons:
+  apt:
+    packages:
+      - texinfo
 env:
   - EMACS_VERSION=25.1-travis
   - EMACS_VERSION=25.2-travis
