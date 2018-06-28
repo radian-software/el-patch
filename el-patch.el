@@ -913,17 +913,17 @@ the `use-package' documentation."
         (plist-put
          rest base-keyword
          (append
-          (cl-mapcan
+          (mapcar
            (lambda (arg)
-             (when (and (consp arg)
-                        (assq (car arg) el-patch-deftype-alist))
-               (list
-                (cons (or
-                       (plist-get
-                        (alist-get (car arg) el-patch-deftype-alist)
-                        :macro-name)
-                       (intern (format "el-patch-%S" (car arg))))
-                      (cdr arg)))))
+             (if (and (consp arg)
+                      (assq (car arg) el-patch-deftype-alist))
+                 (cons (or
+                        (plist-get
+                         (alist-get (car arg) el-patch-deftype-alist)
+                         :macro-name)
+                        (intern (format "el-patch-%S" (car arg))))
+                       (cdr arg))
+               arg))
            args)
           (plist-get rest base-keyword))))
   (setq rest
