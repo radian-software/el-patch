@@ -569,9 +569,12 @@ PATCH-DEFINITION is an unquoted list starting with `defun',
          ;; away so that if there is an error then at least the user
          ;; can undo the patch (as long as it is not too terribly
          ;; wrong).
-         (unless (gethash ',name el-patch--patches)
-           (puthash ',name (make-hash-table :test #'equal) el-patch--patches))
-         (puthash ',type ',patch-definition (gethash ',name el-patch--patches))
+         (puthash ',type
+                  ',patch-definition
+                  (or (gethash ',name el-patch--patches)
+                      (puthash ',name
+                               (make-hash-table :test #'equal)
+                               el-patch--patches)))
          ;; Now we actually overwrite the current definition.
          (el-patch--stealthy-eval
           ,definition
