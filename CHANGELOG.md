@@ -5,11 +5,6 @@ The format is based on [Keep a Changelog].
 
 ## Unreleased
 ### New features
-* `el-patch-let` now allows more than one body form; all body forms
-  are spliced into the containing s-expression. This is fully
-  backwards compatible.
-* `el-patch-literal` always allowed more than one body form, but this
-  fact is now documented.
 * The new patch directive `el-patch-concat` may be used to modify
   string literals in a patch without repeating their contents twice
   ([#14]).
@@ -25,6 +20,14 @@ The format is based on [Keep a Changelog].
 * When a definition is patched, `el-patch` now automatically appends a
   note to the end of the docstring indicating that a patch was made
   ([#14]).
+
+## 2.1 (released 2018-07-12)
+### New features
+* `el-patch-let` now allows more than one body form; all body forms
+  are spliced into the containing s-expression. This is fully
+  backwards compatible.
+* `el-patch-literal` always allowed more than one body form, but this
+  fact is now documented.
 
 ### Bugfixes
 * Using `el-patch-let` could previously cause a circular list error.
