@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
-## Unreleased
+## 2.1 (released 2018-07-12)
 ### New features
 * `el-patch-let` now allows more than one body form; all body forms
   are spliced into the containing s-expression. This is fully
