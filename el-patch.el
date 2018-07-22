@@ -139,7 +139,7 @@ Note that the symbols are from the versions of patches that have
 been resolved in favor of the modified version, when a patch
 renames a symbol.")
 
-(defvar el-patch--not-present 'key-is-not-present-in-hash-table
+(defvar el-patch--not-present (make-symbol "el-patch--not-present")
   "Value used as a default argument to `gethash'.")
 
 ;;;; Resolving patches
@@ -167,7 +167,7 @@ of evaluating the last form in BODY."
          ;; a value that is coincidentally equal to
          ;; `el-patch--not-present', due to limitations in the Emacs
          ;; Lisp hash table API.
-         (if (equal (car kv) el-patch--not-present)
+         (if (eq (car kv) el-patch--not-present)
              (remhash (car kv) table)
            (puthash (car kv) (cadr kv) table))))))
 
