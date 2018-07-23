@@ -95,6 +95,13 @@ allowed. The values are names of functions and variables,
 respectively, that are defined by the definition form. This
 argument is mandatory.
 
+`:locate' - a function which may be called with a full definition
+form (a list starting with e.g. `defun') and which returns the
+actual source code of the definition, as a list. If the patch
+correct and up to date, then this will actually be the same as
+the definition which was passed in. This argument is optional,
+but required if you want patch validation to work.
+
 `:declare' - a list to be put in a `declare' form of the
 resulting `el-patch' macro, like:
 
@@ -111,6 +118,7 @@ optional."
           :value-type (plist
                        :key-type (choice
                                   (const :classify)
+                                  (const :locate)
                                   (const :declare)
                                   (const :macro-name))
                        :value-type sexp)))
@@ -516,7 +524,7 @@ patched. NAME and TYPE are as returned by `el-patch-get'."
 ;;;###autoload
 (progn
   (cl-defmacro el-patch-deftype
-      (type &rest kwargs &key classify declare macro-name)
+      (type &rest kwargs &key classify locate declare macro-name)
     "Allow `el-patch' to patch definitions of the given TYPE.
 TYPE is a symbol like `defun', `define-minor-mode', etc. This
 updates `el-patch-deftype-alist' (which see) with the provided
@@ -569,47 +577,115 @@ similar."
     (list (cons 'function function-name)
           (cons 'variable variable-name))))
 
+;;;;; Location functions
+
+(defmacro el-patch-wrap-locator (&rest body)
+  "Wrap the operation of `find-function-noselect' or similar.
+This disables local variables and messaging, saves the current
+buffer and point, etc. BODY is executed within this context. It
+is assumed that BODY finds the appropriate file in a buffer using
+`get-file-buffer', and then returns a cons cell with the buffer
+and point for the beginning of some Lisp form. The return value
+is the Lisp form, read from the buffer at point."
+  (declare (indent 0))
+  `(let* (;; Since Emacs actually opens the source file in a (hidden)
+          ;; buffer, it can try to apply local variables, which might
+          ;; result in an annoying interactive prompt. Let's disable
+          ;; that.
+          (enable-local-variables nil)
+          (enable-dir-local-variables nil)
+          ;; This is supposed to be noninteractive so we also suppress
+          ;; all the messages. This has the side effect of masking all
+          ;; debugging messages (you can use `insert' instead, or
+          ;; temporarily remove these bindings), but there are just so
+          ;; many different messages that can happen for various
+          ;; reasons and I haven't found any other standard way to
+          ;; suppress them.
+          (inhibit-message t)
+          (message-log-max nil)
+          ;; Now we actually execute BODY to move point to the right
+          ;; file and location.
+          (buffer-point (save-excursion
+                          ;; This horrifying bit of hackery on
+                          ;; `get-file-buffer' prevents
+                          ;; `find-function-noselect' from returning
+                          ;; an existing buffer, so that later on when
+                          ;; we jump to the definition, we don't
+                          ;; temporarily scroll the window if the
+                          ;; definition happens to be in the *current*
+                          ;; buffer.
+                          (cl-letf (((symbol-function #'get-file-buffer)
+                                     (symbol-function #'ignore)))
+                            ,@body)))
+          (defun-buffer (car buffer-point))
+          (defun-point (cdr buffer-point)))
+     (and defun-buffer
+          defun-point
+          (with-current-buffer defun-buffer
+            (save-excursion
+              (goto-char defun-point)
+              (read (current-buffer)))))))
+
+(defun el-patch-locate-variable (definition)
+  "Return the source code of DEFINITION.
+DEFINITION is a list starting with `defvar' or similar."
+  (el-patch-wrap-locator
+    (find-variable-noselect (nth 1 definition))))
+
+(defun el-patch-locate-function (definition)
+  "Return the source code of DEFINITION.
+DEFINITION is a list starting with `defun' or similar."
+  (el-patch-wrap-locator
+    (find-function-noselect (nth 1 definition) 'lisp-only)))
+
 ;;;;; Predefined patch types
 
 ;;;###autoload
 (el-patch-deftype defconst
   :classify el-patch-classify-variable
+  :locate el-patch-locate-variable
   :declare ((doc-string 3)
             (indent defun)))
 
 ;;;###autoload
 (el-patch-deftype defcustom
   :classify el-patch-classify-variable
+  :locate el-patch-locate-variable
   :declare ((doc-string 3)
             (indent defun)))
 
 ;;;###autoload
 (el-patch-deftype define-minor-mode
   :classify el-patch-classify-define-minor-mode
+  :locate el-patch-locate-function
   :declare ((doc-string 2)
             (indent defun)))
 
 ;;;###autoload
 (el-patch-deftype defmacro
   :classify el-patch-classify-function
+  :locate el-patch-locate-function
   :declare ((doc-string 3)
             (indent defun)))
 
 ;;;###autoload
 (el-patch-deftype defsubst
   :classify el-patch-classify-function
+  :locate el-patch-locate-function
   :declare ((doc-string 3)
             (indent defun)))
 
 ;;;###autoload
 (el-patch-deftype defun
   :classify el-patch-classify-function
+  :locate el-patch-locate-function
   :declare ((doc-string 3)
             (indent defun)))
 
 ;;;###autoload
 (el-patch-deftype defvar
   :classify el-patch-classify-variable
+  :locate el-patch-locate-variable
   :declare ((doc-string 3)
             (indent defun)))
 
@@ -632,66 +708,19 @@ patching that might have taken place in
 be defined permanently."
   :type 'hook)
 
-(defun el-patch--classify-definition-type (type)
-  "Classifies a definition TYPE as a `function' or `variable'.
-TYPE is a symbol `defun', `defmacro', etc."
-  (if-let ((classify (assoc type el-patch-deftype-alist)))
-      (pcase (plist-get (cdr classify) :classify)
-        ('el-patch-classify-function 'function)
-        ('el-patch-classify-define-minor-mode 'function)
-        ('el-patch-classify-variable 'variable))
-    (error "Unexpected definition type `%S'" type)))
-
-(defun el-patch--find-symbol (name type)
-  "Return the Lisp form that defines the symbol NAME.
+(defun el-patch--locate (definition)
+  "Return the Lisp form corresponding to the given DEFINITION.
 Return nil if such a definition cannot be found. (That would
 happen if the definition were generated dynamically.) TYPE is a
 symbol `defun', `defmacro', etc. which is used to determine
 whether the symbol is a function or variable."
-  (let ((classification (el-patch--classify-definition-type type)))
-    (when (pcase classification
-            ('function (fboundp name))
-            ('variable (boundp name)))
-      (let* (;; Since Emacs actually opens the source file in a (hidden)
-             ;; buffer, it can try to apply local variables, which might
-             ;; result in an annoying interactive prompt. Let's disable
-             ;; that.
-             (enable-local-variables nil)
-             (enable-dir-local-variables nil)
-             ;; This is supposed to be noninteractive so we also
-             ;; suppress all the messages. This has the side effect of
-             ;; masking all debugging messages (you can use `insert'
-             ;; instead, or temporarily remove these bindings), but
-             ;; there are just so many different messages that can
-             ;; happen for various reasons and I haven't found any other
-             ;; standard way to suppress them.
-             (inhibit-message t)
-             (message-log-max nil)
-             ;; Now we actually do the find-function operation.
-             (buffer-point (save-excursion
-                             ;; This horrifying bit of hackery on
-                             ;; `get-file-buffer' prevents
-                             ;; `find-function-noselect' from
-                             ;; returning an existing buffer, so that
-                             ;; later on when we jump to the
-                             ;; definition, we don't temporarily
-                             ;; scroll the window if the definition
-                             ;; happens to be in the *current* buffer.
-                             (cl-letf (((symbol-function #'get-file-buffer)
-                                        (symbol-function #'ignore)))
-                               (pcase classification
-                                 ('function
-                                  (find-function-noselect name 'lisp-only))
-                                 ('variable
-                                  (find-variable-noselect name))))))
-             (defun-buffer (car buffer-point))
-             (defun-point (cdr buffer-point)))
-        (and defun-buffer
-             defun-point
-             (with-current-buffer defun-buffer
-               (save-excursion
-                 (goto-char defun-point)
-                 (read defun-buffer))))))))
+  (let* ((type (nth 0 definition))
+         (props (alist-get type el-patch-deftype-alist))
+         (locator (plist-get props :locate)))
+    (unless locator
+      (error
+       "Definition type `%S' has no `:locate' in `el-patch-deftype-alist'"))
+    (funcall locator definition)))
 
 ;;;###autoload
 (defun el-patch-validate (name type &optional nomsg run-hooks)
@@ -733,7 +762,7 @@ See also `el-patch-validate-all'."
                (expected-definition (el-patch--resolve-definition
                                      patch-definition nil))
                (name (cadr expected-definition))
-               (actual-definition (el-patch--find-symbol name type)))
+               (actual-definition (el-patch--locate expected-definition)))
           (cond
            ((not actual-definition)
             (display-warning
@@ -906,7 +935,7 @@ patch's original definition. NAME and TYPE are as returned by
                                    patch-definition nil))
              (name (cadr expected-definition))
              (type (car expected-definition))
-             (actual-definition (el-patch--find-symbol name type)))
+             (actual-definition (el-patch--locate expected-definition)))
         (el-patch--ediff-forms
          "*el-patch actual*" actual-definition
          "*el-patch expected*" expected-definition)
