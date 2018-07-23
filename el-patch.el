@@ -531,6 +531,7 @@ updates `el-patch-deftype-alist' (which see) with the provided
 keyword arguments and defines a macro named like
 `el-patch-defun', `el-patch-define-minor-mode', etc."
     (declare (indent defun))
+    (ignore locate)
     (unless classify
       (error "You must specify `:classify' in calls to `el-patch-deftype'"))
     `(progn
@@ -719,7 +720,8 @@ whether the symbol is a function or variable."
          (locator (plist-get props :locate)))
     (unless locator
       (error
-       "Definition type `%S' has no `:locate' in `el-patch-deftype-alist'"))
+       "Definition type `%S' has no `:locate' in `el-patch-deftype-alist'"
+       type))
     (funcall locator definition)))
 
 ;;;###autoload
@@ -933,8 +935,6 @@ patch's original definition. NAME and TYPE are as returned by
   (if-let ((patch-definition (el-patch-get name type)))
       (let* ((expected-definition (el-patch--resolve-definition
                                    patch-definition nil))
-             (name (cadr expected-definition))
-             (type (car expected-definition))
              (actual-definition (el-patch--locate expected-definition)))
         (el-patch--ediff-forms
          "*el-patch actual*" actual-definition
