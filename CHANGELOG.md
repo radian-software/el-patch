@@ -201,4 +201,4 @@ The format is based on [Keep a Changelog].
 [melpa/melpa#4512]: https://github.com/melpa/melpa/pull/4512#issuecomment-274682089
 
 [elint]: https://github.com/raxod502/elint
-[keep a changelog]: [Keep a Changelog]: http://keepachangelog.com/
+[keep a changelog]: https://keepachangelog.com/en/1.0.0/
