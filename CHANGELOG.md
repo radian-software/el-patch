@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
-## Unreleased
+## 2.2 (released 2018-08-14)
 ### New features
 * The new patch directive `el-patch-concat` may be used to modify
   string literals in a patch without repeating their contents twice
