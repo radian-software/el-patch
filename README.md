@@ -333,7 +333,7 @@ Some warnings:
   the value of the variable, if it has already been defined. Thus,
   they are only useful for lazy-loading by default. To override this
   behavior and force the patches to reset the value of the variable,
-  if it is already defined, set `el-patch-use-aggressive-defvar`.
+  even if it is already defined, set `el-patch-use-aggressive-defvar`.
 
 You can patch any definition form, not just those above. To register
 your own definition types, use the `el-patch-deftype` macro. For
@@ -341,6 +341,7 @@ example, the `el-patch-defun` function is defined as follows:
 
     (el-patch-deftype defun
       :classify el-patch-classify-function
+      :locate el-patch-locate-function
       :declare ((doc-string 3)
                 (indent defun)))
 

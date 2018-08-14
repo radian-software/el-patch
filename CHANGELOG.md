@@ -21,6 +21,10 @@ The format is based on [Keep a Changelog].
   note to the end of the docstring indicating that a patch was made
   ([#14]).
 
+[#14]: https://github.com/raxod502/el-patch/issues/14
+[#24]: https://github.com/raxod502/el-patch/issues/24
+[#25]: https://github.com/raxod502/el-patch/issues/25
+
 ## 2.1 (released 2018-07-12)
 ### New features
 * `el-patch-let` now allows more than one body form; all body forms
@@ -36,10 +40,6 @@ The format is based on [Keep a Changelog].
       (el-patch-let ((x y)) (x x x))
 
   That has now been fixed.
-
-[#14]: https://github.com/raxod502/el-patch/issues/14
-[#24]: https://github.com/raxod502/el-patch/issues/24
-[#25]: https://github.com/raxod502/el-patch/issues/25
 
 ## 2.0.1 (released 2018-06-21)
 ### Internal changes
