@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
+## 2.2.1 (released 2018-09-04)
+
+This release includes only a minor documentation enhancement.
+
 ## 2.2 (released 2018-08-14)
 ### New features
 * The new patch directive `el-patch-concat` may be used to modify
