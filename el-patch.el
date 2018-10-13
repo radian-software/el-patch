@@ -1010,6 +1010,7 @@ This mode is enabled or disabled automatically when the
 (provide 'el-patch)
 
 ;; Local Variables:
+;; indent-tabs-mode: nil
 ;; outline-regexp: ";;;;* "
 ;; End:
 
