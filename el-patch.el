@@ -472,9 +472,9 @@ is a sentence to put in brackets at the end of the docstring."
                     classification)))
              ,definition
            ,@(mapcar (lambda (item)
-		       `(setq current-load-list
-			      (remove ',item current-load-list)))
-	             items))))))
+                       `(setq current-load-list
+                              (remove ',item current-load-list)))
+                     items))))))
 
 (defmacro el-patch--definition (patch-definition)
   "Activate a PATCH-DEFINITION and update `el-patch--patches'.
