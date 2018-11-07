@@ -69,13 +69,20 @@ as well as a powerful [advice][advice] system. Sometimes, however,
 these are not enough and you must override the entire function in
 order to change a detail of its implementation.
 
-Such a situation is not ideal, since the original definition of the
-function might change when you update Emacs or one of its packages,
-and your overridden version would then be outdated. This could prevent
-you from benefitting from bugfixes made to the original function, or
-even introduce new bugs into your configuration. Even worse, there is
-no way to tell when the original definition has changed! The
-correctness of your configuration is basically based on faith.
+Such a situation is not ideal, since the original definition of the 
+function might change when you obtain a new version, and your overridden
+version would then be outdated. This could prevent you from benefitting
+from bugfixes made to the original function, or even introduce new bugs
+into your configuration. Even worse, there is no way to tell when the
+original definition has changed! The correctness of your configuration
+is basically based on faith.
+
+This situation is less likely to happen with emacs than with one of the
+external packages you're using. The best procedure, of course, is to reach
+out to the project and submit a pull request or open an issue explaining
+how the code change would be beneficial. In the meanwhile, it's better
+if you don't have to stop what you're doing for a patch that may or
+may not be accepted. Enter `el-patch`.
 
 `el-patch` introduces another way to override Emacs Lisp functions.
 You can provide a *patch* which simutaneously specifies both the
