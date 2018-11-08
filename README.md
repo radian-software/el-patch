@@ -66,16 +66,16 @@ prefer.
 
 Emacs provides a comprehensive set of customizable variables and hooks
 as well as a powerful [advice][advice] system. Sometimes, however,
-these are not enough and you must override the entire function in
-order to change a detail of its implementation.
+these are not enough and you must override an entire function in order
+to change a detail of its implementation.
 
 Such a situation is not ideal, since the original definition of the
 function might change when you update Emacs or one of its packages,
 and your overridden version would then be outdated. This could prevent
 you from benefitting from bugfixes made to the original function, or
-even introduce new bugs into your configuration. Even worse, there is
-no way to tell when the original definition has changed! The
-correctness of your configuration is basically based on faith.
+introduce new bugs into your configuration. Even worse, there is no
+way to tell when the original definition has changed! The correctness
+of your configuration is basically based on faith.
 
 `el-patch` introduces another way to override Emacs Lisp functions.
 You can provide a *patch* which simutaneously specifies both the
@@ -85,6 +85,14 @@ are modifying. However, you can later ask `el-patch` to *validate*
 your patches—that is, to make sure that the original function
 definitions have not changed since you created the patches. If they
 have, `el-patch` will show you the difference using Ediff.
+
+Of course, in an ideal world, `el-patch` would not be necessary,
+because the original definition of the function in Emacs or in one of
+its packages could just be fixed. Sometimes, it is simple to submit a
+pull request and get your desired change implemented upstream.
+Unfortunately, this is not always practical or desirable, so—like the
+advice system—`el-patch` offers a concession to the practical needs of
+your Emacs configuration.
 
 ## Basic usage
 
