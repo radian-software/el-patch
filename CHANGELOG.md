@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
+## 2.2.2 (released 2018-12-14)
+### Enhancements
+* When a definition is patched, `el-patch` automatically adds a note
+  to the docstring so that you know a patch is in effect. Previously,
+  this behavior was suppressed if the modified definition did not
+  contain a docstring at all; now, the note is included regardless,
+  adding a docstring if one was missing ([#31]).
+
+[#31]: https://github.com/raxod502/el-patch/pull/31
+
 ## 2.2.1 (released 2018-09-04)
 
 This release includes only a minor documentation enhancement.
