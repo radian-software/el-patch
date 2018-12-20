@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
+## Unreleased
+### Enhancements
+* The user option `el-patch-use-package-mode` is now correctly
+  declared in the Custom group `el-patch`, rather than the separate
+  group `el-patch-use-package`.
+
 ## 2.2.2 (released 2018-12-14)
 ### Enhancements
 * When a definition is patched, `el-patch` automatically adds a note

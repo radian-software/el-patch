@@ -986,6 +986,7 @@ This mode is enabled or disabled automatically when the
 `el-patch' library is loaded, according to the value of
 `el-patch-enable-use-package-integration'."
   :global t
+  :group 'el-patch
   (if el-patch-use-package-mode
       (with-eval-after-load 'use-package-core
         (dolist (kw '(:init/el-patch :config/el-patch))
