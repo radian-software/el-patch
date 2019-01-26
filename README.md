@@ -87,12 +87,11 @@ definitions have not changed since you created the patches. If they
 have, `el-patch` will show you the difference using Ediff.
 
 Of course, in an ideal world, `el-patch` would not be necessary,
-because the original definition of the function in Emacs or in one of
-its packages could just be fixed. Sometimes, it is simple to submit a
-pull request and get your desired change implemented upstream.
-Unfortunately, this is not always practical or desirable, so—like the
-advice system—`el-patch` offers a concession to the practical needs of
-your Emacs configuration.
+because user options and hooks could be made configurable enough to
+satisfy everyone's needs. Unfortunately, that will never truly be
+possible (or, arguably, desirable), so—like the advice
+system—`el-patch` offers a concession to the practical needs of your
+Emacs configuration.
 
 ## Basic usage
 
