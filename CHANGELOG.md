@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog].
 * The user option `el-patch-use-package-mode` is now correctly
   declared in the Custom group `el-patch`, rather than the separate
   group `el-patch-use-package`.
+* When using `el-patch-ediff-patch` and `el-patch-ediff-conflict` the
+  compared buffers are put into `emacs-lisp-mode` automatically to
+  enable syntax highlighting and Lisp navigation.
 
 ## 2.2.2 (released 2018-12-14)
 ### Enhancements
