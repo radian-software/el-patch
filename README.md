@@ -536,10 +536,6 @@ For this to work, you will need to stick to defining patches with
 `el-patch-def*` and declaring features with `el-patch-feature`.
 Anything else will cause `el-patch` to be loaded at runtime.
 
-Note, of course, that you must have `el-patch` loaded at
-byte-compilation time, since otherwise the macros will expand
-incorrectly. This is true for all packages, not just `el-patch`.
-
 If you do not byte-compile your init-file, then all of this is
 immaterial.
 

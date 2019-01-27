@@ -481,6 +481,7 @@ is a sentence to put in brackets at the end of the docstring."
                               (remove ',item current-load-list)))
                      items))))))
 
+;;;###autoload
 (defmacro el-patch--definition (patch-definition)
   "Activate a PATCH-DEFINITION and update `el-patch--patches'.
 PATCH-DEFINITION is an unquoted list starting with `defun',

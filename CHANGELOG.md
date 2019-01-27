@@ -12,6 +12,19 @@ The format is based on [Keep a Changelog].
   compared buffers are put into `emacs-lisp-mode` automatically to
   enable syntax highlighting and Lisp navigation.
 
+### Bugs fixed
+* Under some circumstances, users received the error message
+
+      Unregistered definition type ‘defalias’
+
+  when evaluating an `el-patch` form. The problem could be worked
+  around by explicitly `require`-ing `el-patch` before the form
+  underwent macroexpansion. However, it should now be impossible to
+  get that error regardless of whether `el-patch` was loaded
+  previously ([#30]).
+
+[#30]: https://github.com/raxod502/el-patch/issues/30
+
 ## 2.2.2 (released 2018-12-14)
 ### Enhancements
 * When a definition is patched, `el-patch` automatically adds a note
