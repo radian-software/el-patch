@@ -621,7 +621,7 @@ is the Lisp form, read from the buffer at point."
                           ;; definition happens to be in the *current*
                           ;; buffer.
                           (cl-letf (((symbol-function #'get-file-buffer)
-                                     (symbol-function #'ignore)))
+                                     #'ignore))
                             ,@body)))
           (defun-buffer (car buffer-point))
           (defun-point (cdr buffer-point)))
