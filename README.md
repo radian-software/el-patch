@@ -16,6 +16,7 @@
 - [Basic usage](#basic-usage)
 - [Patch directives](#patch-directives)
 - [Defining patches](#defining-patches)
+  * [Defining forks](#defining-forks)
 - [Inspecting patches](#inspecting-patches)
 - [Validating patches](#validating-patches)
 - [Removing patches](#removing-patches)
@@ -356,6 +357,15 @@ See the docstrings on the macro `el-patch-deftype` and the variable
 `el-patch-deftype-alist` for more detailed information. See also the
 source code of `el-patch` for examples of how to use
 `el-patch-deftype`.
+
+### Defining forks
+
+Sometimes you want to define a *slightly modified* version of a
+function, so that you can use the patched version in your own code but
+you can still use the original version under its original name. This
+is easy to do:
+
+    (el-patch-defun (el-patch-swap my-old-fn my-new-fn) ...)
 
 ## Inspecting patches
 
