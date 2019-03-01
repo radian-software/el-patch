@@ -367,6 +367,10 @@ is easy to do:
 
     (el-patch-defun (el-patch-swap my-old-fn my-new-fn) ...)
 
+Be sure to include patch directives in the function body showing how
+your modified function is derived from the original, just like in any
+other patch.
+
 ## Inspecting patches
 
 You can run Ediff on a patch (original vs. modified definitions) by
