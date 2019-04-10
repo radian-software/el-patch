@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
-## Unreleased
+## 2.2.3 (released 2019-04-10)
 ### Enhancements
 * The user option `el-patch-use-package-mode` is now correctly
   declared in the Custom group `el-patch`, rather than the separate
