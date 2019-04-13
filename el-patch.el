@@ -531,7 +531,7 @@ patched. NAME and TYPE are as returned by `el-patch-get'."
 ;;;###autoload
 (progn
   (cl-defmacro el-patch-deftype
-      (type &rest kwargs &key classify locate declare macro-name)
+      (type &rest kwargs &key classify locate declare macro-name font-lock)
     "Allow `el-patch' to patch definitions of the given TYPE.
 TYPE is a symbol like `defun', `define-minor-mode', etc. This
 updates `el-patch-deftype-alist' (which see) with the provided
@@ -547,6 +547,8 @@ keyword arguments and defines a macro named like
              ;; code if somebody decides to mutate
              ;; `el-patch-deftype-alist'.
              (copy-tree ',kwargs))
+       ,(when font-lock
+          `(,font-lock ',type))
        (defmacro ,(or macro-name (intern (format "el-patch-%S" type)))
            (name &rest args)
          ,(format "Use `el-patch' to override a `%S' form.
@@ -584,6 +586,28 @@ similar."
       (setq kw-args (nthcdr 2 kw-args)))
     (list (cons 'function function-name)
           (cons 'variable variable-name))))
+
+;;;;; Font-lock functions
+
+(defun el-patch-fontify-as-defun (type)
+  "Fontify patch of TYPE as function definition."
+  (font-lock-add-keywords
+   'emacs-lisp-mode
+   `((,(concat
+        (format "(\\(el-patch-%S\\)\\>[[:blank:]]+\\(" type)
+        lisp-mode-symbol-regexp
+        "\\)[[:blank:]]")
+      (2 font-lock-function-name-face)))))
+
+(defun el-patch-fontify-as-variable (type)
+  "Fontify patch of TYPE as variable definition."
+  (font-lock-add-keywords
+   'emacs-lisp-mode
+   `((,(concat
+        (format "(\\(el-patch-%S\\)\\>[[:blank:]]+\\(" type)
+        lisp-mode-symbol-regexp
+        "\\)[[:blank:]]")
+      (2 font-lock-variable-name-face)))))
 
 ;;;;; Location functions
 
@@ -664,6 +688,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype defconst
   :classify el-patch-classify-variable
   :locate el-patch-locate-variable
+  :font-lock el-patch-fontify-as-variable
   :declare ((doc-string 3)
             (indent defun)))
 
@@ -671,6 +696,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype defcustom
   :classify el-patch-classify-variable
   :locate el-patch-locate-variable
+  :font-lock el-patch-fontify-as-variable
   :declare ((doc-string 3)
             (indent defun)))
 
@@ -678,6 +704,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype define-minor-mode
   :classify el-patch-classify-define-minor-mode
   :locate el-patch-locate-function
+  :font-lock el-patch-fontify-as-defun
   :declare ((doc-string 2)
             (indent defun)))
 
@@ -685,6 +712,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype defmacro
   :classify el-patch-classify-function
   :locate el-patch-locate-function
+  :font-lock el-patch-fontify-as-defun
   :declare ((doc-string 3)
             (indent defun)))
 
@@ -692,6 +720,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype defsubst
   :classify el-patch-classify-function
   :locate el-patch-locate-function
+  :font-lock el-patch-fontify-as-defun
   :declare ((doc-string 3)
             (indent defun)))
 
@@ -699,6 +728,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype defun
   :classify el-patch-classify-function
   :locate el-patch-locate-function
+  :font-lock el-patch-fontify-as-defun
   :declare ((doc-string 3)
             (indent defun)))
 
@@ -706,6 +736,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype defvar
   :classify el-patch-classify-variable
   :locate el-patch-locate-variable
+  :font-lock el-patch-fontify-as-variable
   :declare ((doc-string 3)
             (indent defun)))
 
