@@ -1014,6 +1014,20 @@ This mode is enabled or disabled automatically when the
     (el-patch-use-package-mode +1)
   (el-patch-use-package-mode -1))
 
+(font-lock-add-keywords
+ 'emacs-lisp-mode
+ `((,(concat
+      "(\\(el-patch-def\\(?:un\\|macro\\|subst\\)\\)\\>[[:blank:]]+\\("
+      lisp-mode-symbol-regexp
+      "\\)[[:blank:]]"
+      )
+    (2 font-lock-function-name-face))
+   (,(concat
+      "(\\(el-patch-def\\(?:var\\|const\\|custom\\)\\)\\>[[:blank:]]+\\("
+      lisp-mode-symbol-regexp
+      "\\)[[:blank:]]")
+    (2 font-lock-variable-name-face))))
+
 ;;;; Closing remarks
 
 (provide 'el-patch)
