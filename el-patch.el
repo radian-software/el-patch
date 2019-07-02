@@ -1,4 +1,4 @@
-;;; el-patch.el --- Future-proof your Elisp. -*- lexical-binding: t -*-
+;;; el-patch.el --- Future-proof your Elisp -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2016 Radon Rosborough
 
