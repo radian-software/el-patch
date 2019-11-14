@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
 ## Unreleased
+### Added
+* New patch type `el-patch-cl-defun` ([#39]).
+
 ### Enhancements
 * When using `el-patch-ediff-patch` and `el-patch-ediff-conflict` the
   compared buffers are put into `emacs-lisp-mode` automatically to
@@ -21,6 +24,7 @@ The format is based on [Keep a Changelog].
   previously ([#30]).
 
 [#30]: https://github.com/raxod502/el-patch/issues/30
+[#39]: https://github.com/raxod502/el-patch/issues/39
 
 ## 2.2.3 (released 2019-04-10)
 ### Enhancements

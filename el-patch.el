@@ -647,6 +647,15 @@ DEFINITION is a list starting with `defun' or similar."
 
 ;;;;; Predefined patch types
 
+;; These are alphabetized.
+
+;;;###autoload
+(el-patch-deftype cl-defun
+  :classify el-patch-classify-function
+  :locate el-patch-locate-function
+  :declare ((doc-string 3)
+            (indent defun)))
+
 ;;;###autoload
 (el-patch-deftype defconst
   :classify el-patch-classify-variable
