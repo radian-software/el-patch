@@ -1,3 +1,6 @@
+VERSION ?=
+CMD ?=
+
 EMACS ?= emacs
 
 # The order is important for compilation.
@@ -5,11 +8,20 @@ for_compile := el-patch.el
 for_checkdoc := el-patch.el
 for_longlines := $(wildcard *.el *.md *.yml) Makefile
 
-.PHONY: all
-all: compile checkdoc toc longlines
+.PHONY: help
+help: ## Show this message
+	@echo "usage:" >&2
+	@grep -h "[#]# " $(MAKEFILE_LIST)	| \
+		sed 's/^/  make /'		| \
+		sed 's/:[^#]*[#]# /|/'		| \
+		sed 's/%/LANG/'			| \
+		column -t -s'|' >&2
+
+.PHONY: lint
+lint: compile checkdoc longlines toc ## Run all the linters
 
 .PHONY: compile
-compile:
+compile: ## Byte-compile
 	@for file in $(for_compile); do \
 	    echo "[compile] $$file" ;\
 	    $(EMACS) -Q --batch -L . -f batch-byte-compile $$file 2>&1 \
@@ -18,7 +30,7 @@ compile:
 	done
 
 .PHONY: checkdoc
-checkdoc:
+checkdoc: ## Check docstring style
 	@for file in $(for_checkdoc); do \
 	    echo "[checkdoc] $$file" ;\
 	    $(EMACS) -Q --batch \
@@ -29,9 +41,9 @@ checkdoc:
 	done
 
 .PHONY: longlines
-longlines:
-	@echo "[longlines] $(for_longlines)"
+longlines: ## Check for long lines
 	@for file in $(for_longlines); do \
+	    echo "[longlines] $$file"; \
 	    cat "$$file" \
 	        | sed '/[l]onglines-start/,/longlines-stop/d' \
 	        | grep -E '.{80}' \
@@ -41,7 +53,7 @@ longlines:
 	done
 
 .PHONY: toc
-toc: README.md
+toc: README.md ## Update table of contents in README
 	@echo "[toc] $^"
 	@if command -v markdown-toc >/dev/null; then \
 	    markdown-toc -i $^ ; \
@@ -50,6 +62,10 @@ toc: README.md
 	fi
 
 .PHONY: clean
-clean:
+clean: ## Remove build artifacts
 	@echo "[clean]" *.elc
 	@rm -f *.elc
+
+.PHONY: docker
+docker: ## Start a Docker shell; e.g. make docker VERSION=25.3
+	@scripts/docker.bash "$(VERSION)" "$(CMD)"
