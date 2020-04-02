@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
-## Unreleased
+## 2.3 (released 2020-04-02)
 ### Added
 * New patch type `el-patch-cl-defun` ([#39]).
 
