@@ -79,7 +79,7 @@ way to tell when the original definition has changed! The correctness
 of your configuration is basically based on faith.
 
 `el-patch` introduces another way to override Emacs Lisp functions.
-You can provide a *patch* which simutaneously specifies both the
+You can provide a *patch* which simultaneously specifies both the
 original and modified definitions of the function. When Emacs starts
 up, your patches act just like you had overridden the functions they
 are modifying. However, you can later ask `el-patch` to *validate*
