@@ -74,7 +74,7 @@ before evaluating the new one."
   :type 'boolean)
 
 (defcustom el-patch-require-function #'require
-  "Function to `require' a feature in `el-patch-pre-validate-hook'.
+  "Function to load necessary features before patch validation.
 This is passed all of the arguments of `el-patch-feature' as
 quoted literals, and it should load the feature. This function
 might be useful if, for example, some of your features are
@@ -771,6 +771,7 @@ See also `el-patch-validate-all'."
                  (append (el-patch--select-patch)
                          (list nil (unless current-prefix-arg
                                      'post-only)))))
+  (el-patch--require-features)
   (unless (member run-hooks '(nil post-only))
     (run-hooks 'el-patch-pre-validate-hook))
   (unwind-protect
@@ -810,6 +811,7 @@ Runs `el-patch-pre-validate-hook' and
 
 See `el-patch-validate'."
   (interactive)
+  (el-patch--require-features)
   (run-hooks 'el-patch-pre-validate-hook)
   (unwind-protect
       (let ((patch-count 0)
@@ -843,23 +845,23 @@ See `el-patch-validate'."
 
 ;;;;; el-patch-feature
 
+(defvar el-patch--features nil
+  "A list of (feature . args) to load before validating patches.")
+
 ;;;###autoload
 (defmacro el-patch-feature (feature &rest args)
-  "Declare that some patches are only defined after FEATURE is loaded.
-This is a convenience macro that creates a function for invoking
-`require' on that feature, and then adds it to
-`el-patch-pre-validate-hook' so that your patches are loaded and
-`el-patch' can properly validate them.
+  "Declare that FEATURE is needed before patch validation.
+ARGS are quoted literals that will be passed along with FEATURE
+to `el-patch-require-function'."
+  `(unless (memq ',feature (mapcar #'car el-patch--features))
+     (push (,feature . ,args)
+           el-patch--features)))
 
-FEATURE should be an unquoted symbol. ARGS, if given, are passed
-as quoted literals along with FEATURE to
-`el-patch-require-function' when `el-patch-validate-all' is
-called."
-  (let ((defun-name (intern (format "el-patch-require-%S" feature))))
-    `(progn
-       (defun ,defun-name ()
-         (apply el-patch-require-function ',feature ',args))
-       (add-hook 'el-patch-pre-validate-hook #',defun-name))))
+(defun el-patch--require-features ()
+  "Helper function to load necessary features before validating patch(es).
+See also `el-patch-require-function'."
+  (dolist (feature-args el-patch--features)
+    (apply el-patch-require-function (car feature-args) (cdr feature-args))))
 
 ;;;; Viewing patches
 
