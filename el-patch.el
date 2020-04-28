@@ -74,7 +74,7 @@ before evaluating the new one."
   :type 'boolean)
 
 (defcustom el-patch-require-function #'require
-  "Function to load necessary features before patch validation.
+  "Function to load a feature before patch validation.
 This is passed all of the arguments of `el-patch-feature' as
 quoted literals, and it should load the feature. This function
 might be useful if, for example, some of your features are
