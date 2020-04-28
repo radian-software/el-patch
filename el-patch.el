@@ -846,7 +846,10 @@ See `el-patch-validate'."
 ;;;;; el-patch-feature
 
 (defvar el-patch--features nil
-  "A list of (feature . args) to load before validating patches.")
+  "Alist of features to load before validating patches.
+Each entry in the alist is a list of arguments to pass to
+`el-patch-require-function', starting with the feature name as a
+symbol.")
 
 ;;;###autoload
 (defmacro el-patch-feature (feature &rest args)
