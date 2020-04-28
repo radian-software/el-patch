@@ -856,15 +856,15 @@ symbol.")
   "Declare that FEATURE is needed before patch validation.
 ARGS are quoted literals that will be passed along with FEATURE
 to `el-patch-require-function'."
-  `(unless (memq ',feature (mapcar #'car el-patch--features))
-     (push (,feature . ,args)
-           el-patch--features)))
+  `(unless (assq ',feature el-patch--features)
+    (push (,feature . ,args)
+     el-patch--features)))
 
 (defun el-patch--require-features ()
   "Helper function to load necessary features before validating patch(es).
 See also `el-patch-require-function'."
   (dolist (feature-args el-patch--features)
-    (apply el-patch-require-function (car feature-args) (cdr feature-args))))
+    (apply el-patch-require-function feature-args)))
 
 ;;;; Viewing patches
 
