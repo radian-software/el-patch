@@ -505,8 +505,8 @@ because it is not yet defined.
 
 Since defining some patches after a feature is loaded is such a common
 operation, `el-patch` provides a convenience macro for it: `el-patch-feature`.
-You can call this macro with an (unquoted) feature name, and it will ensure that
-the feature is loaded before patch validation.
+You can call this macro with an (unquoted) feature name, and it will ensure
+that the feature is loaded before patch validation.
 
 For a more complicated setup (for instance, you might need to enable a custom
 minor mode), `el-patch-pre-validate-hook` is available. This hook is run before
