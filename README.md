@@ -27,6 +27,7 @@
 - [But how does it work?](#but-how-does-it-work)
 - [But how does it actually work?](#but-how-does-it-actually-work)
 - [But does it actually work?](#but-does-it-actually-work)
+- [Contributor guide](#contributor-guide)
 
 <!-- tocstop -->
 
@@ -580,6 +581,11 @@ again and the original version is installed by evaluating it.
 ## But does it actually work?
 
 It doesn't seem to crash [my Emacs][radian], at least.
+
+## Contributor guide
+
+Please see [the contributor guide for my
+projects](https://github.com/raxod502/contributor-guide).
 
 [installation]: #installation
 [lazy-loading]: #lazy-loading-packages

@@ -1,12 +1,15 @@
 VERSION ?=
 CMD ?=
 
+SHELL := bash
+
 EMACS ?= emacs
 
 # The order is important for compilation.
 for_compile := el-patch.el
 for_checkdoc := el-patch.el
 for_longlines := $(wildcard *.el *.md *.yml) Makefile
+for_checkindent := $(wildcard *.el)
 
 .PHONY: help
 help: ## Show this message
@@ -18,7 +21,7 @@ help: ## Show this message
 		column -t -s'|' >&2
 
 .PHONY: lint
-lint: compile checkdoc longlines toc ## Run all the linters
+lint: compile checkdoc longlines checkindent toc ## Run all the linters
 
 .PHONY: compile
 compile: ## Byte-compile
@@ -50,6 +53,23 @@ longlines: ## Check for long lines
 	        | grep -E -v '\[.+\]: (#|http)' \
 	        | sed "s/^/$$file:long line: /" \
 	        | grep . && exit 1 || true ;\
+	done
+
+.PHONY: checkindent
+checkindent: ## Ensure that indentation is correct
+	@tmpdir="$$(mktemp -d)"; for file in $(for_checkindent); do \
+	    echo "[checkindent] $$file" >&2; \
+	    emacs -Q --batch \
+	        --eval "(setq inhibit-message t)" \
+	        --eval "(load (expand-file-name \"el-patch.el\") nil t)" \
+	        --eval "(find-file \"$$file\")" \
+	        --eval "(indent-region (point-min) (point-max))" \
+	        --eval "(write-file \"$$tmpdir/$$file\")"; \
+	    (diff <(cat          "$$file" | nl -v1 -ba | \
+                           sed "s/\t/: /" | sed "s/^ */$$file:/") \
+	          <(cat "$$tmpdir/$$file" | nl -v1 -ba | \
+                           sed "s/\t/: /" | sed "s/^ */$$file:/") ) \
+	        | grep -F ">" | grep -o "[a-z].*" | grep . && exit 1 || true; \
 	done
 
 .PHONY: toc
