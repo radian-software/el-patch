@@ -598,8 +598,6 @@ projects](https://github.com/raxod502/contributor-guide).
 [ivy]: https://github.com/abo-abo/swiper
 [melpa]: http://melpa.org
 [package.el]: https://www.gnu.org/software/emacs/manual/html_node/emacs/Packages.html
-[quelpa-use-package]: https://github.com/quelpa/quelpa-use-package
-[quelpa]: https://github.com/quelpa/quelpa
 [radian]: https://github.com/raxod502/radian
 [straight.el]: https://github.com/raxod502/straight.el
 [use-package]: https://github.com/jwiegley/use-package
