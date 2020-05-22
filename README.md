@@ -505,14 +505,15 @@ and `el-patch-validate-all` will not be able to validate your patch,
 because it is not yet defined.
 
 Since defining some patches after a feature is loaded is such a common
-operation, `el-patch` provides a convenience macro for it: `el-patch-feature`.
-You can call this macro with an (unquoted) feature name, and it will ensure
-that the feature is loaded before patch validation.
+operation, `el-patch` provides a convenience macro for it:
+`el-patch-feature`. You can call this macro with an (unquoted) feature
+name, and it will ensure that the feature is loaded before patch
+validation.
 
-For a more complicated setup (for instance, you might need to enable a custom
-minor mode), `el-patch-pre-validate-hook` is available. This hook is run before
-`el-patch-validate-all`, and also before `el-patch-validate` when you provide a
-prefix argument.
+For a more complicated setup (for instance, you might need to enable a
+custom minor mode), `el-patch-pre-validate-hook` is available. This
+hook is run before `el-patch-validate-all`, and also before
+`el-patch-validate` when you provide a prefix argument.
 
 If you don't want all of your patches to be defined all the time, you
 can put some functions in `el-patch-post-validate-hook` to disable

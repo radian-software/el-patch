@@ -857,8 +857,8 @@ symbol.")
 ARGS are quoted literals that will be passed along with FEATURE
 to `el-patch-require-function'."
   `(unless (assq ',feature el-patch--features)
-    (push (,feature . ,args)
-     el-patch--features)))
+     (push (,feature . ,args)
+           el-patch--features)))
 
 (defun el-patch--require-features ()
   "Helper function to load necessary features before validating patch(es).
