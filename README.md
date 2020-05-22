@@ -27,6 +27,7 @@
 - [But how does it work?](#but-how-does-it-work)
 - [But how does it actually work?](#but-how-does-it-actually-work)
 - [But does it actually work?](#but-does-it-actually-work)
+- [Contributor guide](#contributor-guide)
 
 <!-- tocstop -->
 
@@ -578,6 +579,11 @@ again and the original version is installed by evaluating it.
 
 It doesn't seem to crash [my Emacs][radian], at least.
 
+## Contributor guide
+
+Please see [the contributor guide for my
+projects](https://github.com/raxod502/contributor-guide).
+
 [installation]: #installation
 [lazy-loading]: #lazy-loading-packages
 [not-loaded-yet]: #validating-patches-that-are-not-loaded-yet
@@ -589,8 +595,6 @@ It doesn't seem to crash [my Emacs][radian], at least.
 [ivy]: https://github.com/abo-abo/swiper
 [melpa]: http://melpa.org
 [package.el]: https://www.gnu.org/software/emacs/manual/html_node/emacs/Packages.html
-[quelpa-use-package]: https://github.com/quelpa/quelpa-use-package
-[quelpa]: https://github.com/quelpa/quelpa
 [radian]: https://github.com/raxod502/radian
 [straight.el]: https://github.com/raxod502/straight.el
 [use-package]: https://github.com/jwiegley/use-package
