@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
+## Unreleased
+### Bugs fixed
+* If a function is not defined, then `el-patch-validate-all` will
+  proceed to check other patches before reporting the error, rather
+  than crashing immediately ([#46]).
+
+[#46]: https://github.com/raxod502/el-patch/issues/46
+
 ## 2.3 (released 2020-04-02)
 ### Added
 * New patch type `el-patch-cl-defun` ([#39]).
