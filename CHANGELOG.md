@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
-## Unreleased
+## 2.3.1 (released 2020-07-16)
 ### Bugs fixed
 * If a function is not defined, then `el-patch-validate-all` will
   proceed to check other patches before reporting the error, rather
