@@ -48,6 +48,7 @@
 
 ;;;; Libraries
 
+(require 'seq)
 (require 'subr-x)
 (require 'cl-lib)
 
@@ -196,120 +197,129 @@ nil; otherwise resolve in favor of the new version. TABLE is a
 hash table of `el-patch-let' bindings, which maps symbols to
 their bindings."
   (let ((table (or table (make-hash-table :test 'equal))))
-    (if (consp form)
-        (let* ((directive (car form))
-               (this-directive (pcase directive
-                                 ('el-patch-remove 'el-patch-add)
-                                 ('el-patch-splice 'el-patch-wrap)
-                                 (_ directive)))
-               (inverted (not (equal this-directive directive)))
-               (this-new (if inverted (not new) new))
-               (resolve (lambda (form) (el-patch--resolve form new table))))
-          (pcase this-directive
-            ((quote el-patch-add)
-             (when (<= (length form) 1)
+    (cond
+     ((consp form)
+      (let* ((directive (car form))
+             (this-directive (pcase directive
+                               ('el-patch-remove 'el-patch-add)
+                               ('el-patch-splice 'el-patch-wrap)
+                               (_ directive)))
+             (inverted (not (equal this-directive directive)))
+             (this-new (if inverted (not new) new))
+             (resolve (lambda (form) (el-patch--resolve form new table))))
+        (pcase this-directive
+          ((quote el-patch-add)
+           (when (<= (length form) 1)
+             (error "Not enough arguments (%d) for `%s'"
+                    (1- (length form)) directive))
+           (when this-new
+             (cl-mapcan resolve (cdr form))))
+          ((quote el-patch-swap)
+           (cond
+            ((<= (length form) 2)
+             (error "Not enough arguments (%d) for `el-patch-swap'"
+                    (1- (length form))))
+            ((>= (length form) 4)
+             (error "Too many arguments (%d) in for `el-patch-swap'"
+                    (1- (length form)))))
+           (funcall resolve
+                    (if this-new
+                        (cl-caddr form)
+                      (cadr form))))
+          ((quote el-patch-wrap)
+           (let ((triml (if (>= (length form) 3)
+                            (nth 1 form)
+                          0))
+                 (trimr (if (>= (length form) 4)
+                            (nth 2 form)
+                          0))
+                 (body (car (last form))))
+             (cond
+              ((<= (length form) 1)
                (error "Not enough arguments (%d) for `%s'"
                       (1- (length form)) directive))
-             (when this-new
-               (cl-mapcan resolve (cdr form))))
-            ((quote el-patch-swap)
+              ((>= (length form) 5)
+               (error "Too many arguments (%d) for `%s'"
+                      (1- (length form)) directive))
+              ((not (listp body))
+               (error "Non-list (%s) as last argument for `%s'"
+                      (car (last form)) directive))
+              ((and (>= (length form) 3)
+                    (not (integerp triml)))
+               (error "Non-integer (%s) as first argument for `%s'"
+                      (nth 1 form) directive))
+              ((and (>= (length form) 4)
+                    (not (integerp trimr)))
+               (error "Non-integer (%s) as second argument for `%s'"
+                      (nth 2 form) directive))
+              ((< triml 0)
+               (error "Left trim less than zero (%d) for `%s'"
+                      triml directive))
+              ((< trimr 0)
+               (error "Right trim less than zero (%d) for `%s'"
+                      trimr directive))
+              ((> (+ triml trimr) (length body))
+               (error (concat "Combined trim (%d + %d) greater "
+                              "than body length (%d) for `%s'")
+                      triml trimr (length body) directive)))
+             (if this-new
+                 (list (cl-mapcan resolve body))
+               (cl-mapcan resolve (nthcdr triml (butlast body trimr))))))
+          ((quote el-patch-let)
+           (let ((bindings (nth 1 form))
+                 (body (nthcdr 2 form)))
              (cond
               ((<= (length form) 2)
-               (error "Not enough arguments (%d) for `el-patch-swap'"
+               (error "Not enough arguments (%d) for `el-patch-let'"
                       (1- (length form))))
-              ((>= (length form) 4)
-               (error "Too many arguments (%d) in for `el-patch-swap'"
-                      (1- (length form)))))
-             (funcall resolve
-                      (if this-new
-                          (cl-caddr form)
-                        (cadr form))))
-            ((quote el-patch-wrap)
-             (let ((triml (if (>= (length form) 3)
-                              (nth 1 form)
-                            0))
-                   (trimr (if (>= (length form) 4)
-                              (nth 2 form)
-                            0))
-                   (body (car (last form))))
-               (cond
-                ((<= (length form) 1)
-                 (error "Not enough arguments (%d) for `%s'"
-                        (1- (length form)) directive))
-                ((>= (length form) 5)
-                 (error "Too many arguments (%d) for `%s'"
-                        (1- (length form)) directive))
-                ((not (listp body))
-                 (error "Non-list (%s) as last argument for `%s'"
-                        (car (last form)) directive))
-                ((and (>= (length form) 3)
-                      (not (integerp triml)))
-                 (error "Non-integer (%s) as first argument for `%s'"
-                        (nth 1 form) directive))
-                ((and (>= (length form) 4)
-                      (not (integerp trimr)))
-                 (error "Non-integer (%s) as second argument for `%s'"
-                        (nth 2 form) directive))
-                ((< triml 0)
-                 (error "Left trim less than zero (%d) for `%s'"
-                        triml directive))
-                ((< trimr 0)
-                 (error "Right trim less than zero (%d) for `%s'"
-                        trimr directive))
-                ((> (+ triml trimr) (length body))
-                 (error (concat "Combined trim (%d + %d) greater "
-                                "than body length (%d) for `%s'")
-                        triml trimr (length body) directive)))
-               (if this-new
-                   (list (cl-mapcan resolve body))
-                 (cl-mapcan resolve (nthcdr triml (butlast body trimr))))))
-            ((quote el-patch-let)
-             (let ((bindings (nth 1 form))
-                   (body (nthcdr 2 form)))
-               (cond
-                ((<= (length form) 2)
-                 (error "Not enough arguments (%d) for `el-patch-let'"
-                        (1- (length form))))
-                ((not (listp bindings))
-                 (error "Non-list (%s) as first argument for `el-patch-let'"
-                        bindings)))
-               (el-patch--with-puthash table
-                   (mapcar
-                    (lambda (kv)
-                      (unless (symbolp (car kv))
-                        (error "Non-symbol (%s) as binding for `el-patch-let'"
-                               (car kv)))
-                      (list (car kv)
-                            (funcall resolve (cadr kv))))
-                    bindings)
-                 (cl-mapcan resolve body))))
-            ((quote el-patch-literal)
-             (when (<= (length form) 1)
-               (error "Not enough arguments (%d) for `el-patch-literal'"
-                      (1- (length form))))
-             (cdr form))
-            ((quote el-patch-concat)
-             (when (<= (length form) 1)
-               (error "Not enough arguments (%d) for `el-patch-concat'"
-                      (1- (length form))))
-             (list (apply #'concat (cl-mapcan resolve (cdr form)))))
-            (_
-             (let ((car-forms (funcall resolve (car form)))
-                   (cdr-forms (funcall resolve (cdr form))))
-               (cond
-                ((null car-forms) cdr-forms)
-                ((null cdr-forms) car-forms)
-                (t
-                 (let ((forms (nconc car-forms (butlast cdr-forms))))
-                   (setf (nthcdr (length forms) forms)
-                         (car (last cdr-forms)))
-                   (list forms))))))))
+              ((not (listp bindings))
+               (error "Non-list (%s) as first argument for `el-patch-let'"
+                      bindings)))
+             (el-patch--with-puthash table
+                 (mapcar
+                  (lambda (kv)
+                    (unless (symbolp (car kv))
+                      (error "Non-symbol (%s) as binding for `el-patch-let'"
+                             (car kv)))
+                    (list (car kv)
+                          (funcall resolve (cadr kv))))
+                  bindings)
+               (cl-mapcan resolve body))))
+          ((quote el-patch-literal)
+           (when (<= (length form) 1)
+             (error "Not enough arguments (%d) for `el-patch-literal'"
+                    (1- (length form))))
+           (cdr form))
+          ((quote el-patch-concat)
+           (when (<= (length form) 1)
+             (error "Not enough arguments (%d) for `el-patch-concat'"
+                    (1- (length form))))
+           (list (apply #'concat (cl-mapcan resolve (cdr form)))))
+          (_
+           (let ((car-forms (funcall resolve (car form)))
+                 (cdr-forms (funcall resolve (cdr form))))
+             (cond
+              ((null car-forms) cdr-forms)
+              ((null cdr-forms) car-forms)
+              (t
+               (let ((forms (nconc car-forms (butlast cdr-forms))))
+                 (setf (nthcdr (length forms) forms)
+                       (car (last cdr-forms)))
+                 (list forms)))))))))
+     ((vectorp form)
+      (list
+       (seq-mapcat
+        (lambda (subform)
+          (el-patch--resolve subform new table))
+        form
+        'vector)))
+     (t
       (or
        ;; Copy since otherwise we may end up with the same list object
        ;; returned multiple times, which is not okay since lists
        ;; returned by this function may be modified destructively.
        (el-patch--copy-semitree (gethash form table))
-       (list form)))))
+       (list form))))))
 
 (defun el-patch--resolve-definition (patch-definition new)
   "Resolve a PATCH-DEFINITION.
