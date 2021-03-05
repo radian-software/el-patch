@@ -10,7 +10,6 @@
 ;; Version: 0.0.1
 
 ;;; Commentary:
-
 ;; `el-patch-template' is an extension of `el-patch' that allows one
 ;; to specifiy a patch without providing the complete source code of
 ;; the patched form.
@@ -87,15 +86,14 @@ appending it with the matching forms from FORM."
                                                new-match
                                              (list (append
                                                     (cl-subseq body 0 triml)
-                                                    (car new-match)
+                                                    new-match
                                                     (last body trimr)))))))
                             remainder-form))))
            (el-patch-template--process form
-                                       (list
-                                        (if is-splice
-                                            body
-                                          ;; Should not match the trimmings
-                                          (nthcdr triml (butlast body trimr))))
+                                       (if is-splice
+                                           (list body)
+                                         ;; Should not match the trimmings
+                                         (nthcdr triml (butlast body trimr)))
                                        nil
                                        wrap-next-step
                                        table
@@ -144,7 +142,7 @@ appending it with the matching forms from FORM."
           (when (or (not (consp form))
                     (not (stringp (car form))))
             ;; el-patch-concat can only match a string
-            (throw 'not-el-patch nil))
+            (throw 'no-match nil))
           (let* ((resolved (car (el-patch--resolve (cdr template) nil)))
                  (regex
                   (apply 'concat (mapcar (lambda (x)
@@ -158,7 +156,7 @@ appending it with the matching forms from FORM."
                  (match-no 1) split-form)
             (save-match-data
               (unless (string-match (concat "^" regex "$") (car form))
-                (throw 'not-el-patch nil))
+                (throw 'no-match nil))
               ;; Exchange form by the resolved template splicing in
               ;; the matched strings
               (setq split-form
@@ -179,8 +177,7 @@ appending it with the matching forms from FORM."
                                           (when remainder-form
                                             ;; Must be a complete
                                             ;; match
-                                            (throw 'not-el-patch
-                                                   nil))
+                                            (throw 'no-match nil))
                                           (funcall next-step-fn
                                                    (append match
                                                            (list (cons
@@ -188,7 +185,7 @@ appending it with the matching forms from FORM."
                                                                   new-match)))
                                                    (cdr form)))
                                         table)))
-        ((or 'el-patch-literal 'el-patch-remove 'el-patch-concat)
+        ((or 'el-patch-literal 'el-patch-remove)
          (el-patch-template--process form (cdr template)
                                      nil
                                      (lambda (new-match remainder-form)
@@ -212,7 +209,7 @@ appending it with the matching forms from FORM."
                                         next-step-fn
                                         table literal)
   "Matches TEMPLATE to FORM. TEMPLATE may contain `...' which
-greedily match any number of form. It may also contain
+greedily match any number of forms. It may also contain
 `el-patch-*' directives which are resolved before matching. Match
 is succesfful if FORM matches TEMPLATE. Return value is a cons
 where the car is the forms from FROM which match TEMPLATE the cdr
@@ -222,7 +219,6 @@ do not process el-patch-* directives. TABLE is a hash-table which
 contains bindings used by `el-patch-let'"
   (let ((next-step-fn (or next-step-fn
                           (lambda (match remainder-form)
-                            ;; Simply return
                             (cons match remainder-form))))
         (table (or table (make-hash-table :test 'equal))))
     (cond
@@ -249,11 +245,6 @@ contains bindings used by `el-patch-let'"
                                            table))
      ((and (consp template) (consp form))
       (if (member (car template) '(...))
-          ;; TODO: Need to check the if we are in a string here and if
-          ;; so do something special? -- If we are in a string, we
-          ;; have to assume that form has a single string element and
-          ;; we deal with it. If it is not the case, then this cannot
-          ;; be a match
           (progn
             (let ((dots-next-step
                    (lambda (new-match remainder-form)
@@ -276,10 +267,10 @@ contains bindings used by `el-patch-let'"
                                            (cdr template) nil
                                            dots-next-step table
                                            literal))))
-        ;; NOTE: If we want to match zero or more (rather than one
-        ;; or more) then we need to catch the except ion from the
-        ;; previous line and try matching after consuming `...'
-        ;; from TEMPLATE but not consuming any from FORM
+        ;; NOTE: If we want to match zero or more (rather than one or
+        ;; more) then we need to catch the exception from the previous
+        ;; line and try matching after consuming `...' from TEMPLATE
+        ;; but not consuming any from FORM
         (let ((consp-next-step (lambda (new-match remainder-form)
                                  ;; If we are in a string and the
                                  ;; remainder is a string then we can
@@ -297,6 +288,24 @@ contains bindings used by `el-patch-let'"
           (el-patch-template--process (car form) (car template)
                                       nil consp-next-step table
                                       literal))))
+     ((and (vectorp template) (vectorp form))
+      (el-patch-template--process (append form nil) ;; convert to list
+                                  (append template nil)
+                                  nil
+                                  (lambda (new-match remainder-form)
+                                    (when remainder-form
+                                      ;; Must be complete match
+                                      (throw 'no-match nil))
+                                    (funcall next-step-fn
+                                             (if match
+                                                 (append match
+                                                         (list (apply
+                                                                'vector
+                                                                new-match)))
+                                               (apply 'vector new-match))
+                                             remainder-form))
+                                  table
+                                  literal))
      ((null template) ;; nothing else to match
       (funcall next-step-fn match form))
      ((or (member template '(...)) (equal template form))
@@ -340,7 +349,7 @@ contains bindings used by `el-patch-let'"
 
 (defun el-patch-template--match-p (form template)
   "Matches TEMPLATE to FORM. TEMPLATE may contain `...' which
-greedily match any number of form. Match is succesful if a
+greedily match any number of forms. Match is succesful if a
 partial list of FORM, starting from the beginning matches
 TEMPLATE. The return value is the number of forms in FORM which
 match template or nil if a match is not possible."
@@ -361,8 +370,11 @@ match template or nil if a match is not possible."
                    (el-patch-template--match-p (cdr form)
                                                (cdr template))))))
       (1+ matched-count)))
+   ((and (vectorp template) (vectorp form))
+    (el-patch-template--match-p (append form nil);; covert to list
+                                (append template nil)))
    ((and (consp template)
-         (equal (car template) 'el-patch-concat)
+         (equal (car template) 'el-patch-template--concat)
          (stringp form))
     (string-match-p
      (apply 'concat (mapcar (lambda (x)
@@ -398,7 +410,7 @@ definition, otherwise returns nil."
                                             (1- up-to))))))))
 
 (defun el-patch-template--apply (definition ptemplates)
-  "The actual implementation of `el-patch-template--apply'. Here,
+  "Apply the templates in PTEMPLATES to definition.
 PTEMPLATE is a list of plist templates which contain `:template'
 where the actual template resides, `:old' is the template's old
 resolution and `:matched' which is set to t if the template is
@@ -450,12 +462,13 @@ matched in DEFINITION."
 (defun el-patch-template--resolve (forms)
   "Calls `el-patch--resolve' with a special treatment for
 `el-patch-concat'. Specifically, if the arguments of
-`el-patch-concat' have `...' in them, it is not resolved."
+`el-patch-concat' have `...' in them, it is not resolved but
+changed to `el-patch-template--concat'."
   (cl-letf* ((old-concat (symbol-function 'concat))
              ((symbol-function 'concat)
               (lambda (&rest args)
                 (if (cl-some (lambda (x) (equal x '...)) args)
-                    (append '(el-patch-concat) args)
+                    (cons 'el-patch-template--concat args)
                   (apply old-concat args)))))
     (el-patch--resolve forms nil)))
 
@@ -475,8 +488,8 @@ same arguments but quoted."
          (patch (prog1 (el-patch-template--apply definition ptemplates)
                   (cl-dolist (ptemplate ptemplates)
                     (unless (plist-get ptemplate :matched)
-                      (error "At least one template did \
-not match any form"))))))
+                      (error
+                       "At least one template did not match any form"))))))
     ;; NOTE: Unfortunately `el-patch-deftype-alist' doesn't save the
     ;; macro name so we have to assume that it is `el-patch-*'
     (cons (intern (format "el-patch-%S"
