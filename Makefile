@@ -6,8 +6,8 @@ SHELL := bash
 EMACS ?= emacs
 
 # The order is important for compilation.
-for_compile := el-patch.el
-for_checkdoc := el-patch.el
+for_compile := el-patch.el el-patch-template.el
+for_checkdoc := el-patch.el el-patch-template.el
 for_longlines := $(wildcard *.el *.md *.yml) Makefile
 for_checkindent := $(wildcard *.el)
 
@@ -62,7 +62,7 @@ checkindent: ## Ensure that indentation is correct
 	    emacs -Q --batch \
 	        --eval "(setq inhibit-message t)" \
 	        --eval "(load (expand-file-name \"el-patch.el\") nil t)" \
-	        --eval "(find-file \"$$file\")" \
+		--eval "(find-file \"$$file\")" \
 	        --eval "(indent-region (point-min) (point-max))" \
 	        --eval "(write-file \"$$tmpdir/$$file\")"; \
 	    (diff <(cat          "$$file" | nl -v1 -ba | \

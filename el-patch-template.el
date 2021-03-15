@@ -1,5 +1,6 @@
-;;; el-patch-template.el --- -*- lexical-binding: t -*-
+;;; el-patch-template.el --- Source-informed el-patch -*- lexical-binding: t -*-
 
+;; Copyright (C) 2021 Al Haji-Ali
 
 ;; Author: Al Haji-Ali <abdo.haji.ali@gmail.com>
 ;; Created: 1 March 2021
@@ -10,6 +11,7 @@
 ;; Version: 2.3.1
 
 ;;; Commentary:
+
 ;; `el-patch-template' is an extension of `el-patch' that allows one
 ;; to specifiy a patch without providing the complete source code of
 ;; the patched form.
@@ -30,13 +32,22 @@
 ;;   (el-patch-remove
 ;;     (... "Applying style hooks...done")))
 
+;; Please see https://github.com/raxod502/el-patch for more
+;; information.
+
+;;; Code:
+
+(require 'cl-lib)
+(require 'el-patch)
+
 (defun el-patch-template--process-el-patch
     (form template &optional match next-step-fn table)
-  "Process an el-patch statement. Arguments are the same as
-`el-patch-template--match'. Assumes that TEMPLATE is a cons whose
-car is an el-patch directive and throws `not-el-patch' otherwise.
-Upon succesful matching calls `next-step-fn' with MATCH after
-appending it with the matching forms from FORM."
+  "Process an el-patch statement in TEMPLATE against FORM.
+Assume that TEMPLATE is a list whose first element is an el-patch
+directive and throw `not-el-patch' otherwise. Upon successful
+matching, process the forms, append them to MATCH and call
+NEXT-STEP-FN with the result and the remaining unmatched forms.
+TABLE is a hashtable containing the bindings of `el-patch-let'"
   (when (consp template)
     (let* ((directive (car template)))
       (pcase directive
@@ -208,15 +219,18 @@ appending it with the matching forms from FORM."
 (defun el-patch-template--process (form template &optional match
                                         next-step-fn
                                         table literal)
-  "Matches TEMPLATE to FORM. TEMPLATE may contain `...' which
-greedily match any number of forms. It may also contain
-`el-patch-*' directives which are resolved before matching. Match
-is succesfful if FORM matches TEMPLATE. Return value is a cons
-where the car is the forms from FROM which match TEMPLATE the cdr
-are the are the remaining unmatched forms. If TEMPLATE is nil,
-calls NEXT-STEP-FN with MATCH and FORM. When LITERAL is non-nil,
-do not process el-patch-* directives. TABLE is a hash-table which
-contains bindings used by `el-patch-let'"
+  "Match FORM to TEMPLATE and return the resolution.
+TEMPLATE may contain `...' which greedily matches any number of
+forms in FORM. TEMPLATE may also contain `el-patch-*' directives
+which are resolved before matching. If NEXT-STEP-FN is nil,
+return a cons whose car is concatenation of MATCH and the
+processed forms from FROM, including `el-patch-*' directives,
+which match TEMPLATE when the `el-patch-*' directives are
+resolved, and the cdr are the remaining unmatched forms.
+Otherwise, call NEXT-STEP-FN with the matched recessed forms and
+and the remaining unmatched forms and return the result. When
+LITERAL is non-nil, do not process el-patch-* directives. TABLE
+is a hash-table which contains bindings used by `el-patch-let'"
   (let ((next-step-fn (or next-step-fn
                           (lambda (match remainder-form)
                             (cons match remainder-form))))
@@ -348,11 +362,12 @@ contains bindings used by `el-patch-let'"
           (throw 'no-match nil))))))
 
 (defun el-patch-template--match-p (form template)
-  "Matches TEMPLATE to FORM. TEMPLATE may contain `...' which
-greedily match any number of forms. Match is succesful if a
-partial list of FORM, starting from the beginning matches
-TEMPLATE. The return value is the number of forms in FORM which
-match template or nil if a match is not possible."
+  "Check if the forms in FORM match TEMPLATE.
+TEMPLATE may contain `...' which greedily matches any number of
+forms in FORM. Match is successful if a partial list of FORM,
+starting from the beginning, matches TEMPLATE. The return value
+is the number of forms in FORM which match TEMPLATE or nil if a
+match is not possible."
   (cond
    ((and (consp template) (consp form))
     (when-let ((matched-count
@@ -393,8 +408,15 @@ match template or nil if a match is not possible."
                  1))))))
 
 (defun el-patch-template--any-p (definition ptemplates &optional up-to)
-  "Returns t if any templates in PTEMPLATE match any form in
-definition, otherwise returns nil."
+  "Return t if any template in PTEMPLATES matches any form in DEFINITION.
+Otherwise return nil. See `el-patch-template--apply' for a
+description of PTEMPLATES. The forms in DEFINITION are checked
+against the `:old' resolutions in PTEMPLATES. The optional
+argument UP-TO specifies the number of forms in DEFINITION to
+check.
+
+A match is successful if `el-patch-template--match-p' returns
+non-nil."
   (and (or (null up-to) (> up-to 0))
        (or (cl-some
             (lambda (x) (el-patch-template--match-p definition
@@ -410,11 +432,12 @@ definition, otherwise returns nil."
                                             (1- up-to))))))))
 
 (defun el-patch-template--apply (definition ptemplates)
-  "Apply the templates in PTEMPLATES to definition.
-PTEMPLATE is a list of plist templates which contain `:template'
+  "Return DEFINITION after applying the templates in PTEMPLATES.
+
+PTEMPLATE is a list of property lists which contain `:template'
 where the actual template resides, `:old' is the template's old
 resolution and `:matched' which is set to t if the template is
-matched in DEFINITION."
+matched to a form in DEFINITION."
   (let (matched-forms-count matched-ptemplate)
     (cl-dolist (ptemplate ptemplates)
       (let ((matched (el-patch-template--match-p definition
@@ -460,7 +483,9 @@ matched in DEFINITION."
                                         ptemplates)))))))
 
 (defun el-patch-template--resolve (forms)
-  "Calls `el-patch--resolve' with a special treatment for
+  "Resolve `el-patch-*' directives in FORMS.
+
+Similar to `el-patch--resolve' with a special treatment for
 `el-patch-concat'. Specifically, if the arguments of
 `el-patch-concat' have `...' in them, it is not resolved but
 changed to `el-patch-template--concat'."
@@ -473,7 +498,9 @@ changed to `el-patch-template--concat'."
     (el-patch--resolve forms nil)))
 
 (defun el-patch-template--impl (keyword-name templates)
-  "The actual implementation of `el-patch-template', accepts the
+  "Apply the templates to the definition of an elisp construct.
+
+The actual implementation of `el-patch-template', accepts the
 same arguments but quoted."
   (let* ((definition (or (el-patch--locate
                           (car (el-patch--resolve keyword-name nil)))
@@ -489,24 +516,32 @@ same arguments but quoted."
                   (cl-dolist (ptemplate ptemplates)
                     (unless (plist-get ptemplate :matched)
                       (error
-                       "At least one template did not match any form"))))))
-    ;; NOTE: Unfortunately `el-patch-deftype-alist' doesn't save the
-    ;; macro name so we have to assume that it is `el-patch-*'
-    (cons (intern (format "el-patch-%S"
-                          (car patch))) ;; should be an el-patch-*
+                       "At least one template did not match any form")))))
+         (props (alist-get (car keyword-name) el-patch-deftype-alist)))
+    (cons (intern
+           (or (plist-get props :macro-name)
+               ;; otherwise should be an el-patch-*
+               (format "el-patch-%S" (car patch))))
           (append (cdr keyword-name)
                   (cddr patch)))))
 
 (defmacro el-patch-template (keyword-name &rest templates)
-  "KEYWORD-NAME is cons whose car is a type which can be any type
-from `el-patch-deftype-alist' and the cdr is the name of the form
-to be patched. Looks for all forms which match a template in
-TEMPLATES and processes them by matching all `...' forms against
-the source code of the form, while keeping the `el-patch-*'
-directives. Returns an `el-patch-*' definition.
+  "Apply TEMPLATES to the definition of an elisp construct.
+KEYWORD-NAME is a list whose first element is a type which can be
+any type from `el-patch-deftype-alist', e.g., `defun',
+`defmacro', etc, and the second element is the name of the
+construct to be patched.
 
-A template must match exactly one form in the definition. and
-should not match a subform in another template."
+Look for all forms which match a template in TEMPLATES and
+process them by matching all `...' forms against the definition
+of the elisp construct, while keeping the `el-patch-*'
+directives. Return an `el-patch-*' definition with `...' replaced
+by the largest number of forms which lead to succeful match of
+the resolved resolved.
+
+A template must match exactly one form in the definition of the
+elisp construct, and should not match a subform in another
+template."
   `(el-patch-template--impl (quote ,keyword-name)
                             (quote ,templates)))
 
