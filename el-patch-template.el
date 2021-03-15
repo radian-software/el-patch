@@ -3,11 +3,11 @@
 
 ;; Author: Al Haji-Ali <abdo.haji.ali@gmail.com>
 ;; Created: 1 March 2021
-;; Homepage: http://www.randomoid.com
+;; Homepage: https://github.com/raxod502/el-patch
 ;; Keywords: extensions
 ;; Package-Requires: ((emacs "25"))
 ;; SPDX-License-Identifier: MIT
-;; Version: 0.0.1
+;; Version: 2.3.1
 
 ;;; Commentary:
 ;; `el-patch-template' is an extension of `el-patch' that allows one
@@ -32,8 +32,8 @@
 
 (defun el-patch-template--process-el-patch
     (form template &optional match next-step-fn table)
-  "Processes an el-patch statement. Arguments are the same as
-`el-patch-template--match'. Assume thats template is a cons whose
+  "Process an el-patch statement. Arguments are the same as
+`el-patch-template--match'. Assumes that TEMPLATE is a cons whose
 car is an el-patch directive and throws `not-el-patch' otherwise.
 Upon succesful matching calls `next-step-fn' with MATCH after
 appending it with the matching forms from FORM."
@@ -502,7 +502,7 @@ same arguments but quoted."
 from `el-patch-deftype-alist' and the cdr is the name of the form
 to be patched. Looks for all forms which match a template in
 TEMPLATES and processes them by matching all `...' forms against
-the souce code of the form, while keeping the `el-patch-*'
+the source code of the form, while keeping the `el-patch-*'
 directives. Returns an `el-patch-*' definition.
 
 A template must match exactly one form in the definition. and
@@ -511,3 +511,9 @@ should not match a subform in another template."
                             (quote ,templates)))
 
 (provide 'el-patch-template)
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; End:
+
+;;; el-patch-template.el ends here
