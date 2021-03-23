@@ -650,19 +650,25 @@ macro-expand the resolved template after defining the template.
 If called in runtime, evaluate the resolved template instead and,
 if `el-patch-warn-on-eval-template' is non-nil, print a warning."
   (if (bound-and-true-p byte-compile-current-file)
-      (let ((resolved-name
-             (el-patch--define-template type-name templates)))
-        (list 'progn
-              ;; Add template definition to the macro expansion so
-              ;; that when the compiled file is executed the template
-              ;; definition is still accessible.
-              `(when (featurep 'el-patch-template)
-                 ;; Only define the template if el-patch-template is
-                 ;; loaded
-                 (el-patch--define-template (quote ,type-name)
-                                            (quote ,templates)))
-              (el-patch--resolve-template resolved-name
-                                          (car type-name))))
+      (let* ((resolved-name
+              (el-patch--define-template type-name templates))
+             (resolved-template (el-patch--resolve-template
+                                 resolved-name (car type-name))))
+        `(progn
+           ;; In case el-patch-template is not loaded then simply
+           ;; set `el-patch--templates' to an empty hash
+           (setq el-patch--templates
+                 (or (bound-and-true-p el-patch--templates)
+                     (make-hash-table :test 'equal)))
+           ;; Add template definition to `el-patch--templates'
+           (puthash (quote ,(car type-name))
+                    (cons (quote ,(cadr type-name))
+                          (quote ,templates))
+                    (or (gethash (quote ,resolved-name) el-patch--templates)
+                        (puthash (quote ,resolved-name)
+                                 (make-hash-table :test #'equal)
+                                 el-patch--templates)))
+           ,resolved-template))
     `(let* ((qtype-name (quote ,type-name))
             (resolved-name (el-patch--define-template
                             qtype-name (quote ,templates))))
