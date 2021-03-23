@@ -576,6 +576,7 @@ being patched; TYPE is a symbol `defun', `defmacro', etc."
 
 (defun el-patch--define-template (type-name templates)
   "Define an el-patch template.
+Return the new-resolved name of the object.
 
 The meaning of TYPE-NAME and TEMPLATES is the same as in
 `el-patch-define-template' (which see), but here they need to be
@@ -628,13 +629,15 @@ TYPE-NAME is a list whose first element is a type which can be
 any type from `el-patch-deftype-alist', e.g., `defun',
 `defmacro', etc, and the second element is the name of the elisp
 object to be patched or an `el-patch-*' form that resolves to
-that name.
+that name. Return the new-resolved name of the object.
 
-A template in TEMPLATES can contain `...', which greedily match
+A template in TEMPLATES can contain `...', which greedily matches
 one or more forms, and `el-patch-*' directives which are resolved
 before being matched. A template must match exactly one form in
 the definition of the elisp object, and should not match a
-subform in another template."
+subform in another template. The checks along with the actual
+matching are done when the functions `el-patch-eval-template' or
+`el-patch-insert-template' are called."
   `(el-patch--define-template (quote ,type-name)
                               (quote ,templates)))
 
@@ -644,7 +647,7 @@ subform in another template."
 The meaning of TYPE-NAME and TEMPLATES are the same as
 `el-patch-define-template'. If called in compile-time,
 macro-expand the resolved template after defining the template.
-If called in runtime, evaluate the resolved template instead and
+If called in runtime, evaluate the resolved template instead and,
 if `el-patch-warn-on-eval-template' is non-nil, print a warning."
   (if (bound-and-true-p byte-compile-current-file)
       (let ((resolved-name
@@ -653,8 +656,11 @@ if `el-patch-warn-on-eval-template' is non-nil, print a warning."
               ;; Add template definition to the macro expansion so
               ;; that when the compiled file is executed the template
               ;; definition is still accessible.
-              `(el-patch--define-template (quote ,type-name)
-                                          (quote ,templates))
+              `(when (featurep 'el-patch-template)
+                 ;; Only define the template if el-patch-template is
+                 ;; loaded
+                 (el-patch--define-template (quote ,type-name)
+                                            (quote ,templates)))
               (el-patch--resolve-template resolved-name
                                           (car type-name))))
     `(let* ((qtype-name (quote ,type-name))
