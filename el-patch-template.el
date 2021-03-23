@@ -1,4 +1,4 @@
-;;; el-patch-template.el --- Source-informed el-patch -*- lexical-binding: t -*-
+;;; el-patch-template.el --- Even easier patching -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2021 Al Haji-Ali
 
@@ -17,21 +17,24 @@
 ;; the patched form.
 ;;
 ;; Example usage:
-;;
-;; (el-patch-template (defun TeX-update-style)
-;;   (el-patch-concat
-;;     "Run style specific hooks"
-;;     (el-patch-add
-;;       ", silently,")
-;;     " for the current document.
-;;
-;; Only do this if it has not been done before, or if optional argument
-;; FORCE is not nil.")
-;;   (el-patch-remove
-;;     (... "Applying style hooks..."))
-;;   (el-patch-remove
-;;     (... "Applying style hooks...done")))
 
+;; (el-patch-define-template
+;;   (defun (el-patch-swap restart-emacs radian-new-emacs))
+;;   (el-patch-concat
+;;     (el-patch-swap
+;;       "Restart Emacs."
+;;       "Start a new Emacs session without killing the current one.")
+;;     ...
+;;     (el-patch-swap "restarted" "started")
+;;     ...
+;;     (el-patch-swap "restarted" "started")
+;;     ...
+;;     (el-patch-swap "restarted" "started")
+;;     ...)
+;;   (el-patch-swap
+;;     (save-buffers-kill-emacs)
+;;     (restart-emacs--launch-other-emacs restart-args)))
+;;
 ;; Please see https://github.com/raxod502/el-patch for more
 ;; information.
 
@@ -40,9 +43,18 @@
 (require 'cl-lib)
 (require 'el-patch)
 
-(defun el-patch-template--process-el-patch
+;;;;;; Internal functions and variables:
+(defvar el-patch--templates (make-hash-table :test 'equal)
+  "Hash table of templates that have been defined.
+The keys are symbols naming the objects that have been patched.
+The values are hash tables mapping definition types (symbols
+`defun', `defmacro', etc.) to patch definitions, which are lists
+beginning with `defun', `defmacro', etc.")
+
+
+(defun el-patch--process-el-patch-template
     (form template &optional match next-step-fn table)
-  "Process an el-patch statement in TEMPLATE against FORM.
+  "Match FORM to an `el-patch-*' directive and return the resolution.
 Assume that TEMPLATE is a list whose first element is an el-patch
 directive and throw `not-el-patch' otherwise. Upon successful
 matching, process the forms, append them to MATCH and call
@@ -67,9 +79,9 @@ TABLE is a hashtable containing the bindings of `el-patch-let'"
                                            (car new-match)
                                            ;; Second argument as is
                                            ;; from template
-                                           (caddr template))))
+                                           (cl-caddr template))))
                             remainder-form))))
-            (el-patch-template--process form
+            (el-patch--process-template form
                                         ;; We match the first argument
                                         ;; only
                                         (list (cadr template))
@@ -100,7 +112,7 @@ TABLE is a hashtable containing the bindings of `el-patch-let'"
                                                     new-match
                                                     (last body trimr)))))))
                             remainder-form))))
-           (el-patch-template--process form
+           (el-patch--process-template form
                                        (if is-splice
                                            (list body)
                                          ;; Should not match the trimmings
@@ -142,10 +154,10 @@ TABLE is a hashtable containing the bindings of `el-patch-let'"
                         (cons (cadr kv)
                               ;; The cdr is the resolution, nil for
                               ;; now, and will be filled in
-                              ;; el-patch-template--match
+                              ;; el-patch--process-template
                               nil)))
                 bindings)
-             (el-patch-template--process form body
+             (el-patch--process-template form body
                                          nil
                                          let-next-step
                                          table))))
@@ -180,7 +192,7 @@ TABLE is a hashtable containing the bindings of `el-patch-let'"
                                           (1+ match-no)))
                                 x))
                             resolved)))
-            (el-patch-template--process split-form
+            (el-patch--process-template split-form
                                         (cdr template)
                                         nil
                                         (lambda (new-match
@@ -197,7 +209,7 @@ TABLE is a hashtable containing the bindings of `el-patch-let'"
                                                    (cdr form)))
                                         table)))
         ((or 'el-patch-literal 'el-patch-remove)
-         (el-patch-template--process form (cdr template)
+         (el-patch--process-template form (cdr template)
                                      nil
                                      (lambda (new-match remainder-form)
                                        (funcall next-step-fn
@@ -216,21 +228,23 @@ TABLE is a hashtable containing the bindings of `el-patch-let'"
         (_
          (throw 'not-el-patch nil))))))
 
-(defun el-patch-template--process (form template &optional match
+(defun el-patch--process-template (form template &optional match
                                         next-step-fn
                                         table literal)
   "Match FORM to TEMPLATE and return the resolution.
 TEMPLATE may contain `...' which greedily matches any number of
 forms in FORM. TEMPLATE may also contain `el-patch-*' directives
-which are resolved before matching. If NEXT-STEP-FN is nil,
-return a cons whose car is concatenation of MATCH and the
-processed forms from FROM, including `el-patch-*' directives,
-which match TEMPLATE when the `el-patch-*' directives are
-resolved, and the cdr are the remaining unmatched forms.
-Otherwise, call NEXT-STEP-FN with the matched recessed forms and
-and the remaining unmatched forms and return the result. When
-LITERAL is non-nil, do not process el-patch-* directives. TABLE
-is a hash-table which contains bindings used by `el-patch-let'"
+which are resolved before matching. Upon successful matching,
+process the forms, append them to MATCH and call NEXT-STEP-FN
+with the result and the remaining unmatched forms. TABLE is a
+hashtable containing the bindings of `el-patch-let'. When LITERAL
+is non-nil, do not process el-patch-* directives.
+
+If NEXT-STEP-FN is nil, return a cons whose car is concatenation
+of MATCH and the processed forms from FROM, including
+`el-patch-*' directives, which match TEMPLATE when the
+`el-patch-*' directives are resolved, and the cdr are the
+remaining unmatched forms."
   (let ((next-step-fn (or next-step-fn
                           (lambda (match remainder-form)
                             (cons match remainder-form))))
@@ -245,12 +259,12 @@ is a hash-table which contains bindings used by `el-patch-let'"
                                                    el-patch-add
                                                    el-patch-concat
                                                    el-patch-let)))
-      (el-patch-template--process-el-patch form (car template)
+      (el-patch--process-el-patch-template form (car template)
                                            match
                                            ;; The next step is to
                                            ;; match cdr template
                                            (lambda (new-match remainder-form)
-                                             (el-patch-template--process
+                                             (el-patch--process-template
                                               remainder-form
                                               (cdr template)
                                               new-match
@@ -269,12 +283,12 @@ is a hash-table which contains bindings used by `el-patch-let'"
                               remainder-form))))
               (or
                (catch 'no-match
-                 (el-patch-template--process (cdr form)
+                 (el-patch--process-template (cdr form)
                                              ;; Try not consuming `...'
                                              template nil
                                              dots-next-step table
                                              literal))
-               (el-patch-template--process (cdr form)
+               (el-patch--process-template (cdr form)
                                            ;; If we are here, we failed
                                            ;; the previous match so try
                                            ;; consuming `...'
@@ -289,7 +303,7 @@ is a hash-table which contains bindings used by `el-patch-let'"
                                  ;; If we are in a string and the
                                  ;; remainder is a string then we can
                                  ;; still match it
-                                 (el-patch-template--process
+                                 (el-patch--process-template
                                   (if remainder-form
                                       (cons remainder-form
                                             (cdr form))
@@ -299,11 +313,11 @@ is a hash-table which contains bindings used by `el-patch-let'"
                                           (list new-match))
                                   next-step-fn
                                   table literal))))
-          (el-patch-template--process (car form) (car template)
+          (el-patch--process-template (car form) (car template)
                                       nil consp-next-step table
                                       literal))))
      ((and (vectorp template) (vectorp form))
-      (el-patch-template--process (append form nil) ;; convert to list
+      (el-patch--process-template (append form nil) ;; convert to list
                                   (append template nil)
                                   nil
                                   (lambda (new-match remainder-form)
@@ -350,7 +364,7 @@ is a hash-table which contains bindings used by `el-patch-let'"
                              (puthash template old-entry table)
                              ;; and rethrow
                              (throw 'no-match nil)))))))
-            (el-patch-template--process form
+            (el-patch--process-template form
                                         (or
                                          ;; The previous resolution
                                          (cdr symbol)
@@ -361,7 +375,7 @@ is a hash-table which contains bindings used by `el-patch-let'"
                                         table literal))
           (throw 'no-match nil))))))
 
-(defun el-patch-template--match-p (form template)
+(defun el-patch--match-template-p (form template)
   "Check if the forms in FORM match TEMPLATE.
 TEMPLATE may contain `...' which greedily matches any number of
 forms in FORM. Match is successful if a partial list of FORM,
@@ -373,20 +387,20 @@ match is not possible."
     (when-let ((matched-count
                 (if (member (car template) '(...))
                     (or
-                     (el-patch-template--match-p (cdr form)
+                     (el-patch--match-template-p (cdr form)
                                                  template)
                      ;; If we are here, we failed so try consuming
                      ;; `...'
-                     (el-patch-template--match-p (cdr form)
+                     (el-patch--match-template-p (cdr form)
                                                  (cdr template)))
                   (and
-                   (el-patch-template--match-p (car form)
+                   (el-patch--match-template-p (car form)
                                                (car template))
-                   (el-patch-template--match-p (cdr form)
+                   (el-patch--match-template-p (cdr form)
                                                (cdr template))))))
       (1+ matched-count)))
    ((and (vectorp template) (vectorp form))
-    (el-patch-template--match-p (append form nil);; covert to list
+    (el-patch--match-template-p (append form nil);; covert to list
                                 (append template nil)))
    ((and (consp template)
          (equal (car template) 'el-patch-template--concat)
@@ -407,31 +421,31 @@ match is not possible."
                    (length form)
                  1))))))
 
-(defun el-patch-template--any-p (definition ptemplates &optional up-to)
-  "Return t if any template in PTEMPLATES matches any form in DEFINITION.
-Otherwise return nil. See `el-patch-template--apply' for a
+(defun el-patch--any-template-p (definition ptemplates &optional up-to)
+  "Return t if any form in DEFINITION matches a template in PTEMPLATES.
+Otherwise return nil. See `el-patch--apply-template' for a
 description of PTEMPLATES. The forms in DEFINITION are checked
 against the `:old' resolutions in PTEMPLATES. The optional
 argument UP-TO specifies the number of forms in DEFINITION to
 check.
 
-A match is successful if `el-patch-template--match-p' returns
+A match is successful if `el-patch--match-template-p' returns
 non-nil."
   (and (or (null up-to) (> up-to 0))
        (or (cl-some
-            (lambda (x) (el-patch-template--match-p definition
+            (lambda (x) (el-patch--match-template-p definition
                                                     (plist-get x :old)))
             ptemplates)
            (and
             (consp definition)
-            (or (el-patch-template--any-p (car definition)
+            (or (el-patch--any-template-p (car definition)
                                           ptemplates)
-                (el-patch-template--any-p (cdr definition)
+                (el-patch--any-template-p (cdr definition)
                                           ptemplates
                                           (when up-to
                                             (1- up-to))))))))
 
-(defun el-patch-template--apply (definition ptemplates)
+(defun el-patch--apply-template (definition ptemplates)
   "Return DEFINITION after applying the templates in PTEMPLATES.
 
 PTEMPLATE is a list of property lists which contain `:template'
@@ -440,7 +454,7 @@ resolution and `:matched' which is set to t if the template is
 matched to a form in DEFINITION."
   (let (matched-forms-count matched-ptemplate)
     (cl-dolist (ptemplate ptemplates)
-      (let ((matched (el-patch-template--match-p definition
+      (let ((matched (el-patch--match-template-p definition
                                                  (plist-get ptemplate :old))))
         (when matched
           (when matched-ptemplate
@@ -450,20 +464,20 @@ matched to a form in DEFINITION."
     (cond
      ((null matched-ptemplate)
       (if (consp definition)
-          (cons (el-patch-template--apply (car definition)
+          (cons (el-patch--apply-template (car definition)
                                           ptemplates)
-                (el-patch-template--apply (cdr definition)
+                (el-patch--apply-template (cdr definition)
                                           ptemplates))
         definition))
      ((plist-get matched-ptemplate :matched)
       (error "A template matches multiple forms"))
      ((and (consp definition)
            (or
-            (el-patch-template--any-p (car definition)
+            (el-patch--any-template-p (car definition)
                                       ptemplates)
             (and
              (cdr definition)
-             (el-patch-template--any-p (cdr definition)
+             (el-patch--any-template-p (cdr definition)
                                        ptemplates
                                        (1- matched-forms-count)))))
       (error "A form matching a template has subforms matching\
@@ -474,16 +488,16 @@ matched to a form in DEFINITION."
       ;; do the actual resolution
       (plist-put matched-ptemplate :matched t)
       (let ((resolution
-             (el-patch-template--process definition
+             (el-patch--process-template definition
                                          (list
                                           (plist-get matched-ptemplate
                                                      :template)))))
         (cons (caar resolution)
-              (el-patch-template--apply (cdr resolution)
+              (el-patch--apply-template (cdr resolution)
                                         ptemplates)))))))
 
-(defun el-patch-template--resolve (forms)
-  "Resolve `el-patch-*' directives in FORMS.
+(defun el-patch--partial-old-resolve (forms)
+  "Resolve `el-patch-*' directives in FORMS to old form.
 
 Similar to `el-patch--resolve' with a special treatment for
 `el-patch-concat'. Specifically, if the arguments of
@@ -497,58 +511,166 @@ changed to `el-patch-template--concat'."
                   (apply old-concat args)))))
     (el-patch--resolve forms nil)))
 
-(defun el-patch-template--impl (keyword-name templates)
-  "Apply the templates to the definition of an elisp construct.
+;; Stolen from el-patch
+(defun el-patch--select-template ()
+  "Use `completing-read' to select a template.
+Return a list of two elements, the name (a symbol) of the object
+being patched and the type (a symbol `defun', `defmacro', etc.)
+of the definition."
+  (let ((options (mapcar #'symbol-name
+                         (hash-table-keys el-patch--templates))))
+    (unless options
+      (user-error "No templates defined"))
+    (let* ((name (intern (completing-read
+                          "Which template? "
+                          options
+                          nil
+                          'require-match)))
+           (patch-hash (gethash name el-patch--templates))
+           (options (mapcar #'symbol-name
+                            (hash-table-keys patch-hash))))
+      (list name
+            (intern (pcase (length options)
+                      (0 (error "Internal `el-patch' error"))
+                      (1 (car options))
+                      (_ (completing-read
+                          "Which version? "
+                          options
+                          nil
+                          'require-match))))))))
 
-The actual implementation of `el-patch-template', accepts the
-same arguments but quoted."
-  (let* ((definition (or (el-patch--locate
-                          (car (el-patch--resolve keyword-name nil)))
-                         (error "Cannot find definition for `%s'"
-                                (cadr keyword-name))))
-         (ptemplates (mapcar
-                      (lambda (template)
-                        (list :template template
-                              :old (el-patch-template--resolve template)
-                              :matched nil))
-                      templates))
-         (patch (prog1 (el-patch-template--apply definition ptemplates)
-                  (cl-dolist (ptemplate ptemplates)
-                    (unless (plist-get ptemplate :matched)
-                      (error
-                       "At least one template did not match any form")))))
-         (props (alist-get (car keyword-name) el-patch-deftype-alist)))
-    (cons (intern
-           (or (plist-get props :macro-name)
-               ;; otherwise should be an el-patch-*
-               (format "el-patch-%S" (car patch))))
-          (append (cdr keyword-name)
-                  (cddr patch)))))
+(defun el-patch--resolve-template (name type)
+  "Resolve a template and returns the complete `el-patch-*' definition.
 
-(defmacro el-patch-template (keyword-name &rest templates)
-  "Apply TEMPLATES to the definition of an elisp construct.
-KEYWORD-NAME is a list whose first element is a type which can be
+Template should have been defined using
+`el-patch-define-template'. NAME is a symbol naming the object
+being patched; TYPE is a symbol `defun', `defmacro', etc."
+  (let* ((template-def (gethash type (gethash name
+                                              el-patch--templates)))
+         (unresolved-name (car template-def))
+         (templates (cdr template-def))
+         (old-name (car (el-patch--resolve unresolved-name nil))))
+    (unless template-def
+      (error "The template definition of %S was not found" name))
+    (let* ((definition (or (el-patch--locate (list type old-name))
+                           (error "Cannot find definition for `%s'"
+                                  name)))
+           (ptemplates (mapcar
+                        (lambda (template)
+                          (list :template template
+                                :old (el-patch--partial-old-resolve template)
+                                :matched nil))
+                        templates))
+           (patch (prog1 (el-patch--apply-template definition ptemplates)
+                    (cl-dolist (ptemplate ptemplates)
+                      (unless (plist-get ptemplate :matched)
+                        (error
+                         "At least one template did not match any form")))))
+           (props (alist-get type el-patch-deftype-alist)))
+      (cons (intern
+             (or (plist-get props :macro-name)
+                 ;; otherwise should be an el-patch-*
+                 (format "el-patch-%S" (car patch))))
+            (append (list unresolved-name)
+                    (cddr patch))))))
+
+(defun el-patch--define-template (type-name templates)
+  "Define an el-patch template.
+
+The meaning of TYPE-NAME and TEMPLATES is the same as in
+`el-patch-define-template' (which see), but here they need to be
+quoted since they are passed as regular function arguments."
+  (unless (and (listp type-name) (eq (length type-name) 2))
+    (user-error "TYPE-NAME is expected to be a list with two \
+elements"))
+  (let* ((type (car type-name))
+         (unresolved-name (cadr type-name))
+         (resolved-name (car (el-patch--resolve unresolved-name t))))
+    (puthash type
+             (cons unresolved-name templates)
+             (or (gethash resolved-name el-patch--templates)
+                 (puthash resolved-name
+                          (make-hash-table :test #'equal)
+                          el-patch--templates)))
+    resolved-name))
+
+;;;;;; User options, functions and macros
+(defcustom el-patch-warn-on-eval-template t
+  "When non-nil, print a warning when a template is evaluated in runtime.
+The message is printed when
+`el-patch-define-compiletime-template' is called in runtime
+rather than in compile time."
+  :type 'boolean
+  :group 'el-patch)
+
+(defun el-patch-insert-template (name type)
+  "Resolve a template to an el-patch definition and insert it at point.
+
+Template should have been defined using
+`el-patch-define-template'. NAME is a symbol naming the object
+being patched; TYPE is a symbol `defun', `defmacro', etc."
+  (interactive (el-patch--select-template))
+  (insert (format "%S"
+                  (el-patch--resolve-template name type))))
+
+(defun el-patch-eval-template (name type)
+  "Resolve a template to an el-patch definition and evaluate it.
+
+Template should have been defined using
+`el-patch-define-template'. NAME is a symbol naming the object
+being patched; TYPE is a symbol `defun', `defmacro', etc."
+  (interactive (el-patch--select-template))
+  (eval (el-patch--resolve-template name type)))
+
+(defmacro el-patch-define-template (type-name &rest templates)
+  "Define an el-patch template.
+TYPE-NAME is a list whose first element is a type which can be
 any type from `el-patch-deftype-alist', e.g., `defun',
-`defmacro', etc, and the second element is the name of the
-construct to be patched.
+`defmacro', etc, and the second element is the name of the elisp
+object to be patched or an `el-patch-*' form that resolves to
+that name.
 
-Look for all forms which match a template in TEMPLATES and
-process them by matching all `...' forms against the definition
-of the elisp construct, while keeping the `el-patch-*'
-directives. Return an `el-patch-*' definition with `...' replaced
-by the largest number of forms which lead to succeful match of
-the resolved resolved.
+A template in TEMPLATES can contain `...', which greedily match
+one or more forms, and `el-patch-*' directives which are resolved
+before being matched. A template must match exactly one form in
+the definition of the elisp object, and should not match a
+subform in another template."
+  `(el-patch--define-template (quote ,type-name)
+                              (quote ,templates)))
 
-A template must match exactly one form in the definition of the
-elisp construct, and should not match a subform in another
-template."
-  `(el-patch-template--impl (quote ,keyword-name)
-                            (quote ,templates)))
+(defmacro el-patch-define-compiletime-template (type-name &rest templates)
+  "Define and evaluate an el-patch template.
+
+The meaning of TYPE-NAME and TEMPLATES are the same as
+`el-patch-define-template'. If called in compile-time,
+macro-expand the resolved template after defining the template.
+If called in runtime, evaluate the resolved template instead and
+if `el-patch-warn-on-eval-template' is non-nil, print a warning."
+  (if (bound-and-true-p byte-compile-current-file)
+      (let ((resolved-name
+             (el-patch--define-template type-name templates)))
+        (list 'progn
+              ;; Add template definition to the macro expansion so
+              ;; that when the compiled file is executed the template
+              ;; definition is still accessible.
+              `(el-patch--define-template (quote ,type-name)
+                                          (quote ,templates))
+              (el-patch--resolve-template resolved-name
+                                          (car type-name))))
+    `(let* ((qtype-name (quote ,type-name))
+            (resolved-name (el-patch--define-template
+                            qtype-name (quote ,templates))))
+       (when el-patch-warn-on-eval-template
+         (warn "Runtime evaluation of el-patch templates \
+can be slow, consider byte-compiling."))
+       (el-patch-eval-template resolved-name
+                               (car qtype-name)))))
 
 (provide 'el-patch-template)
 
 ;; Local Variables:
 ;; indent-tabs-mode: nil
+;; checkdoc-verb-check-experimental-flag: nil
 ;; End:
 
 ;;; el-patch-template.el ends here
