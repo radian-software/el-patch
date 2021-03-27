@@ -60,173 +60,172 @@ directive and throw `not-el-patch' otherwise. Upon successful
 matching, process the forms, append them to MATCH and call
 NEXT-STEP-FN with the result and the remaining unmatched forms.
 TABLE is a hashtable containing the bindings of `el-patch-let'"
-  (when (consp template)
-    (let* ((directive (car template)))
-      (pcase directive
-        ('el-patch-swap
-          (let ((swap-next-step
-                 (lambda (new-match remainder-form)
-                   (when (cdr new-match)
-                     ;; el-patch-swap swaps a single form
-                     ;; with another
-                     (throw 'no-match nil))
-                   (funcall next-step-fn
-                            (append match
-                                    (list
-                                     (list directive
-                                           ;; First argument is
-                                           ;; replaced by match
-                                           (car new-match)
-                                           ;; Second argument as is
-                                           ;; from template
-                                           (cl-caddr template))))
-                            remainder-form))))
-            (el-patch--process-template form
-                                        ;; We match the first argument
-                                        ;; only
-                                        (list (cadr template))
-                                        nil swap-next-step
-                                        table nil)))
-        ((or 'el-patch-wrap 'el-patch-splice)
-         (let* ((triml (if (>= (length template) 3)
-                           (nth 1 template)
-                         0))
-                (trimr (if (>= (length template) 4)
-                           (nth 2 template)
-                         0))
-                (is-splice (equal directive 'el-patch-splice))
-                (body (car (last template)))
-                (wrap-next-step
-                 (lambda (new-match remainder-form)
-                   (funcall next-step-fn
-                            (append match
-                                    ;; The directive with arguments
-                                    (list (append
-                                           (cl-subseq template 0
-                                                      (1- (length template)))
-                                           (if (equal directive
-                                                      'el-patch-splice)
-                                               new-match
-                                             (list (append
-                                                    (cl-subseq body 0 triml)
-                                                    new-match
-                                                    (last body trimr)))))))
-                            remainder-form))))
-           (el-patch--process-template form
-                                       (if is-splice
-                                           (list body)
-                                         ;; Should not match the trimmings
-                                         (nthcdr triml (butlast body trimr)))
-                                       nil
-                                       wrap-next-step
-                                       table
-                                       nil)))
-        ((quote el-patch-let)
-         (let* ((bindings (nth 1 template))
-                (body (nthcdr 2 template))
-                (let-next-step (lambda (new-match remainder-form)
-                                 ;; Build list of new bindings
-                                 ;; based on the their resolution
-                                 (let ((new-bindings
-                                        (mapcar
-                                         (lambda (kv)
-                                           (let ((x (gethash (car kv)
-                                                             table)))
-                                             (list (car kv)
-                                                   (or (cdr x) (car x)))))
-                                         bindings)))
-                                   (funcall next-step-fn
-                                            (append match
-                                                    (list
-                                                     (append
-                                                      (list
-                                                       directive
-                                                       new-bindings)
-                                                      new-match)))
-                                            remainder-form)))))
-           (el-patch--with-puthash table
-               (mapcar
-                (lambda (kv)
-                  (unless (symbolp (car kv))
-                    (error "Non-symbol (%s) as binding for `el-patch-let'"
-                           (car kv)))
-                  (list (car kv)
-                        (cons (cadr kv)
-                              ;; The cdr is the resolution, nil for
-                              ;; now, and will be filled in
-                              ;; el-patch--process-template
-                              nil)))
-                bindings)
-             (el-patch--process-template form body
-                                         nil
-                                         let-next-step
-                                         table))))
-        ('el-patch-concat
-          (when (or (not (consp form))
-                    (not (stringp (car form))))
-            ;; el-patch-concat can only match a string
-            (throw 'no-match nil))
-          (let* ((resolved (car (el-patch--resolve (cdr template) nil)))
-                 (regex
-                  (apply 'concat (mapcar (lambda (x)
-                                           (if (equal x '...)
-                                               ;;"[\0-\377[:nonascii:]]*"
-                                               ;; match any
-                                               ;; character
-                                               "\\(\\(?:.\\|\n\\)*\\)"
-                                             (regexp-quote x)))
-                                         resolved)))
-                 (match-no 1) split-form)
-            (save-match-data
-              (unless (string-match (concat "^" regex "$") (car form))
-                (throw 'no-match nil))
-              ;; Exchange form by the resolved template splicing in
-              ;; the matched strings
-              (setq split-form
-                    (mapcar (lambda (x)
-                              (if (equal x '...)
-                                  (prog1
-                                      (match-string match-no
-                                                    (car form))
-                                    (setq match-no
-                                          (1+ match-no)))
-                                x))
-                            resolved)))
-            (el-patch--process-template split-form
-                                        (cdr template)
-                                        nil
-                                        (lambda (new-match
-                                                 remainder-form)
-                                          (when remainder-form
-                                            ;; Must be a complete
-                                            ;; match
-                                            (throw 'no-match nil))
-                                          (funcall next-step-fn
-                                                   (append match
-                                                           (list (cons
-                                                                  directive
-                                                                  new-match)))
-                                                   (cdr form)))
-                                        table)))
-        ((or 'el-patch-literal 'el-patch-remove)
-         (el-patch--process-template form (cdr template)
+  (let ((directive (car template)))
+    (pcase directive
+      ('el-patch-swap
+        (let ((swap-next-step
+               (lambda (new-match remainder-form)
+                 (when (cdr new-match)
+                   ;; el-patch-swap swaps a single form
+                   ;; with another
+                   (throw 'no-match nil))
+                 (funcall next-step-fn
+                          (append match
+                                  (list
+                                   (list directive
+                                         ;; First argument is
+                                         ;; replaced by match
+                                         (car new-match)
+                                         ;; Second argument as is
+                                         ;; from template
+                                         (cl-caddr template))))
+                          remainder-form))))
+          (el-patch--process-template form
+                                      ;; We match the first argument
+                                      ;; only
+                                      (list (cadr template))
+                                      nil swap-next-step
+                                      table nil)))
+      ((or 'el-patch-wrap 'el-patch-splice)
+       (let* ((triml (if (>= (length template) 3)
+                         (nth 1 template)
+                       0))
+              (trimr (if (>= (length template) 4)
+                         (nth 2 template)
+                       0))
+              (is-splice (equal directive 'el-patch-splice))
+              (body (car (last template)))
+              (wrap-next-step
+               (lambda (new-match remainder-form)
+                 (funcall next-step-fn
+                          (append match
+                                  ;; The directive with arguments
+                                  (list (append
+                                         (cl-subseq template 0
+                                                    (1- (length template)))
+                                         (if (equal directive
+                                                    'el-patch-splice)
+                                             new-match
+                                           (list (append
+                                                  (cl-subseq body 0 triml)
+                                                  new-match
+                                                  (last body trimr)))))))
+                          remainder-form))))
+         (el-patch--process-template form
+                                     (if is-splice
+                                         (list body)
+                                       ;; Should not match the trimmings
+                                       (nthcdr triml (butlast body trimr)))
                                      nil
-                                     (lambda (new-match remainder-form)
-                                       (funcall next-step-fn
-                                                (append match
-                                                        (list (cons
-                                                               directive
-                                                               new-match)))
-                                                remainder-form))
+                                     wrap-next-step
                                      table
-                                     (equal directive 'el-patch-literal)))
-        ('el-patch-add ;; Matches nothing
-          (funcall next-step-fn
-                   ;; simply add the template to the match
-                   (append match (list template))
-                   form))
-        (_
-         (throw 'not-el-patch nil))))))
+                                     nil)))
+      ((quote el-patch-let)
+       (let* ((bindings (nth 1 template))
+              (body (nthcdr 2 template))
+              (let-next-step (lambda (new-match remainder-form)
+                               ;; Build list of new bindings
+                               ;; based on the their resolution
+                               (let ((new-bindings
+                                      (mapcar
+                                       (lambda (kv)
+                                         (let ((x (gethash (car kv)
+                                                           table)))
+                                           (list (car kv)
+                                                 (or (cdr x) (car x)))))
+                                       bindings)))
+                                 (funcall next-step-fn
+                                          (append match
+                                                  (list
+                                                   (append
+                                                    (list
+                                                     directive
+                                                     new-bindings)
+                                                    new-match)))
+                                          remainder-form)))))
+         (el-patch--with-puthash table
+             (mapcar
+              (lambda (kv)
+                (unless (symbolp (car kv))
+                  (error "Non-symbol (%s) as binding for `el-patch-let'"
+                         (car kv)))
+                (list (car kv)
+                      (cons (cadr kv)
+                            ;; The cdr is the resolution, nil for
+                            ;; now, and will be filled in
+                            ;; el-patch--process-template
+                            nil)))
+              bindings)
+           (el-patch--process-template form body
+                                       nil
+                                       let-next-step
+                                       table))))
+      ('el-patch-concat
+        (when (or (not (consp form))
+                  (not (stringp (car form))))
+          ;; el-patch-concat can only match a string
+          (throw 'no-match nil))
+        (let* ((resolved (car (el-patch--resolve (cdr template) nil)))
+               (regex
+                (apply 'concat (mapcar (lambda (x)
+                                         (if (equal x '...)
+                                             ;;"[\0-\377[:nonascii:]]*"
+                                             ;; match any
+                                             ;; character
+                                             "\\(\\(?:.\\|\n\\)*\\)"
+                                           (regexp-quote x)))
+                                       resolved)))
+               (match-no 1) split-form)
+          (save-match-data
+            (unless (string-match (concat "^" regex "$") (car form))
+              (throw 'no-match nil))
+            ;; Exchange form by the resolved template splicing in
+            ;; the matched strings
+            (setq split-form
+                  (mapcar (lambda (x)
+                            (if (equal x '...)
+                                (prog1
+                                    (match-string match-no
+                                                  (car form))
+                                  (setq match-no
+                                        (1+ match-no)))
+                              x))
+                          resolved)))
+          (el-patch--process-template split-form
+                                      (cdr template)
+                                      nil
+                                      (lambda (new-match
+                                               remainder-form)
+                                        (when remainder-form
+                                          ;; Must be a complete
+                                          ;; match
+                                          (throw 'no-match nil))
+                                        (funcall next-step-fn
+                                                 (append match
+                                                         (list (cons
+                                                                directive
+                                                                new-match)))
+                                                 (cdr form)))
+                                      table)))
+      ((or 'el-patch-literal 'el-patch-remove)
+       (el-patch--process-template form (cdr template)
+                                   nil
+                                   (lambda (new-match remainder-form)
+                                     (funcall next-step-fn
+                                              (append match
+                                                      (list (cons
+                                                             directive
+                                                             new-match)))
+                                              remainder-form))
+                                   table
+                                   (equal directive 'el-patch-literal)))
+      ('el-patch-add ;; Matches nothing
+        (funcall next-step-fn
+                 ;; simply add the template to the match
+                 (append match (list template))
+                 form))
+      (_
+       (throw 'not-el-patch nil)))))
 
 (defun el-patch--process-template (form template &optional match
                                         next-step-fn
@@ -245,10 +244,7 @@ of MATCH and the processed forms from FROM, including
 `el-patch-*' directives, which match TEMPLATE when the
 `el-patch-*' directives are resolved, and the cdr are the
 remaining unmatched forms."
-  (let ((next-step-fn (or next-step-fn
-                          (lambda (match remainder-form)
-                            (cons match remainder-form))))
-        (table (or table (make-hash-table :test 'equal))))
+  (let ((table (or table (make-hash-table :test 'equal))))
     (cond
      ((and (not literal)
            (consp template)
@@ -273,106 +269,115 @@ remaining unmatched forms."
                                            table))
      ((and (consp template) (consp form))
       (if (member (car template) '(...))
-          (progn
-            (let ((dots-next-step
-                   (lambda (new-match remainder-form)
-                     (funcall next-step-fn
-                              (append match
-                                      (cons (car form)
-                                            new-match))
-                              remainder-form))))
-              (or
-               (catch 'no-match
-                 (el-patch--process-template (cdr form)
-                                             ;; Try not consuming `...'
-                                             template nil
-                                             dots-next-step table
-                                             literal))
-               (el-patch--process-template (cdr form)
-                                           ;; If we are here, we failed
-                                           ;; the previous match so try
-                                           ;; consuming `...'
-                                           (cdr template) nil
-                                           dots-next-step table
-                                           literal))))
+          (let* ((dots-next-step
+                  (when next-step-fn
+                    ;; If next-step-fn was provided, then we need to
+                    ;; cascade the steps. Otherwise, there's no need
+                    ;; and we can simply return the cons
+                    (lambda (new-match remainder-form)
+                      (funcall next-step-fn
+                               (append match
+                                       (cons (car form)
+                                             new-match))
+                               remainder-form))))
+                 (ret-val (or (catch 'no-match
+                                (el-patch--process-template
+                                 (cdr form)
+                                 ;; Try not consuming `...'
+                                 template nil
+                                 dots-next-step table
+                                 literal))
+                              (el-patch--process-template
+                               (cdr form)
+                               ;; If we are here, we failed
+                               ;; the previous match so try
+                               ;; consuming `...'
+                               (cdr template) nil
+                               dots-next-step table
+                               literal))))
+            (if dots-next-step
+                ret-val ;; Next step already processed
+              (cons (append match
+                            (cons (car form)
+                                  (car ret-val)))
+                    (cdr ret-val))))
         ;; NOTE: If we want to match zero or more (rather than one or
         ;; more) then we need to catch the exception from the previous
         ;; line and try matching after consuming `...' from TEMPLATE
         ;; but not consuming any from FORM
-        (let ((consp-next-step (lambda (new-match remainder-form)
-                                 ;; If we are in a string and the
-                                 ;; remainder is a string then we can
-                                 ;; still match it
-                                 (el-patch--process-template
-                                  (if remainder-form
-                                      (cons remainder-form
-                                            (cdr form))
-                                    (cdr form))
-                                  (cdr template)
-                                  (append match ;; start with previous match
-                                          (list new-match))
-                                  next-step-fn
-                                  table literal))))
-          (el-patch--process-template (car form) (car template)
-                                      nil consp-next-step table
-                                      literal))))
+        (let* ((ret-val (el-patch--process-template (car form) (car template)
+                                                    nil nil table
+                                                    literal))
+               (new-match (car ret-val))
+               (remainder-form (cdr ret-val)))
+          (el-patch--process-template
+           (if remainder-form
+               (cons remainder-form
+                     (cdr form))
+             (cdr form))
+           (cdr template)
+           (append match ;; start with previous match
+                   (list new-match))
+           next-step-fn
+           table literal))))
      ((and (vectorp template) (vectorp form))
-      (el-patch--process-template (append form nil) ;; convert to list
-                                  (append template nil)
-                                  nil
-                                  (lambda (new-match remainder-form)
-                                    (when remainder-form
-                                      ;; Must be complete match
-                                      (throw 'no-match nil))
-                                    (funcall next-step-fn
-                                             (if match
-                                                 (append match
-                                                         (list (apply
-                                                                'vector
-                                                                new-match)))
-                                               (apply 'vector new-match))
-                                             remainder-form))
-                                  table
-                                  literal))
+      (let* ((ret-val (el-patch--process-template
+                       (append form nil) ;; convert to list
+                       (append template nil)
+                       nil
+                       nil
+                       table
+                       literal))
+             (new-match (car ret-val))
+             (remainder-form (cdr ret-val)))
+        (when remainder-form
+          ;; Must be complete match
+          (throw 'no-match nil))
+        (funcall (or next-step-fn 'cons)
+                 (if match
+                     (append match
+                             (list (apply
+                                    'vector
+                                    new-match)))
+                   (apply 'vector new-match))
+                 remainder-form)))
      ((null template) ;; nothing else to match
-      (funcall next-step-fn match form))
+      (funcall (or next-step-fn 'cons) match form))
      ((or (member template '(...)) (equal template form))
       ;; A Complete match.
-      (funcall next-step-fn (append match form) nil))
+      (funcall (or next-step-fn 'cons) (append match form) nil))
      (t
-      (or (when-let ((symbol (gethash template table))
-                     (symbol-next-step
-                      (lambda (new-match remainder-form)
-                        ;; First put the match in the table.
-                        (let ((old-entry (gethash template table)))
-                          (puthash template
-                                   (cons
-                                    (car symbol)
-                                    new-match)
-                                   table)
-                          ;; Then process the next step, adding the
-                          ;; template to the match
-                          (condition-case _
-                              (funcall next-step-fn
-                                       (if match
-                                           (cons match template)
-                                         template)
-                                       remainder-form)
-                            ('no-match
-                             ;; Ultimately, the matching did not
-                             ;; work, so undo the symbol resolution
-                             (puthash template old-entry table)
-                             ;; and rethrow
-                             (throw 'no-match nil)))))))
-            (el-patch--process-template form
-                                        (or
-                                         ;; The previous resolution
-                                         (cdr symbol)
-                                         ;; The template-value
-                                         (car symbol))
-                                        nil
-                                        symbol-next-step
-                                        table literal))
+      (or (when-let ((symbol (gethash template table)))
+            (let* ((ret-val (el-patch--process-template
+                             form
+                             (or (cdr symbol)  ;; The previous resolution
+                                 (car symbol)) ;; The template-value
+                             nil
+                             nil
+                             table literal))
+                   (new-match (car ret-val))
+                   (remainder-form (cdr ret-val))
+                   (old-entry (gethash template table)))
+              ;; Save the symbol resolution
+              (puthash template
+                       (cons
+                        (car symbol)
+                        new-match)
+                       table)
+              ;; Then process the next step, adding the
+              ;; template to the match
+              (condition-case _
+                  (funcall (or next-step-fn 'cons)
+                           (if match
+                               (cons match template)
+                             template)
+                           remainder-form)
+                ('no-match
+                 ;; Ultimately, the matching did not
+                 ;; work, so undo the symbol resolution
+                 (puthash template old-entry table)
+                 ;; and rethrow
+                 (throw 'no-match nil)))))
           (throw 'no-match nil))))))
 
 (defun el-patch--match-template-p (form template)
@@ -487,13 +492,17 @@ matched to a form in DEFINITION."
       ;; Here we first mark the template as being matched then
       ;; do the actual resolution
       (plist-put matched-ptemplate :matched t)
-      (let ((resolution
-             (el-patch--process-template definition
-                                         (list
-                                          (plist-get matched-ptemplate
-                                                     :template)))))
+      (let* ((temp-def (seq-take definition matched-forms-count))
+             (remainder-def (seq-drop definition matched-forms-count))
+             (resolution
+              (el-patch--process-template temp-def
+                                          (list
+                                           (plist-get matched-ptemplate
+                                                      :template)))))
+        (when (cdr resolution)
+          (error "Expected a full-match"))
         (cons (caar resolution)
-              (el-patch--apply-template (cdr resolution)
+              (el-patch--apply-template remainder-def
                                         ptemplates)))))))
 
 (defun el-patch--partial-old-resolve (forms)
