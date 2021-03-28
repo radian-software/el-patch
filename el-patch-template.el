@@ -500,7 +500,7 @@ matched to a form in DEFINITION."
                                            (plist-get matched-ptemplate
                                                       :template)))))
         (when (cdr resolution)
-          (error "Expected a full-match"))
+          (error "Internal `el-patch' error"))
         (cons (caar resolution)
               (el-patch--apply-template remainder-def
                                         ptemplates)))))))
@@ -682,10 +682,98 @@ if `el-patch-warn-on-eval-template' is non-nil, print a warning."
             (resolved-name (el-patch--define-template
                             qtype-name (quote ,templates))))
        (when el-patch-warn-on-eval-template
-         (warn "Runtime evaluation of el-patch templates \
+         (display-warning 'el-patch "Runtime evaluation of el-patch templates \
 can be slow, consider byte-compiling."))
        (el-patch-eval-template resolved-name
                                (car qtype-name)))))
+
+
+;;;###autoload
+(defun el-patch-validate-template (name type &optional nomsg run-hooks)
+  "Validate the template with given NAME and TYPE.
+This means el-patch will verify that the template is applicable
+to the original function assumed by the patch. A warning will be
+signaled if the original definition for a patched function cannot
+be found, or if the template is not applicable.
+
+Interactively, use `completing-read' to select a function to
+inspect the template of.
+
+NAME is a symbol naming the object being patched; TYPE is a
+symbol `defun', `defmacro', etc.
+
+Returns nil if the template is not valid, and otherwise returns t.
+If NOMSG is non-nil, does not signal a message when the patch is
+valid.
+
+If RUN-HOOKS is non-nil, runs `el-patch-pre-validate-hook' and
+`el-patch-post-validate-hook'. Interactively, this happens unless
+a prefix argument is provided.
+
+See also `el-patch-validate-all'."
+  (interactive (progn
+                 (unless current-prefix-arg
+                   (run-hooks 'el-patch-pre-validate-hook))
+                 (append (el-patch--select-template)
+                         (list nil (unless current-prefix-arg
+                                     'post-only)))))
+  (message "Checking %S" name)
+  (unless (member run-hooks '(nil post-only))
+    (run-hooks 'el-patch-pre-validate-hook))
+  (prog1 (condition-case err-handle
+             (progn
+               (el-patch--resolve-template name type)
+               (unless nomsg
+                 (message "Template is valid"))
+               t)
+           (error
+            (progn
+              (display-warning 'el-patch
+                               (format "`%S' failed -- %s" name
+                                       (cadr err-handle)))
+              nil)))
+    (when run-hooks
+      (run-hooks 'el-patch-post-validate-hook))))
+
+;;;###autoload
+(defun el-patch-validate-all-templates ()
+  "Validate all currently defined patches.
+Runs `el-patch-pre-validate-hook' and
+`el-patch-post-validate-hook'.
+
+See `el-patch-validate-template'."
+  (interactive)
+  (run-hooks 'el-patch-pre-validate-hook)
+  (unwind-protect
+      (let ((template-count 0)
+            (warning-count 0))
+        (dolist (name (hash-table-keys el-patch--templates))
+          (let ((template-hash (gethash name el-patch--templates)))
+            (dolist (type (hash-table-keys template-hash))
+              (setq template-count (1+ template-count))
+              (unless (el-patch-validate-template name type 'nomsg)
+                (setq warning-count (1+ warning-count))))))
+        (cond
+         ((zerop template-count)
+          (user-error "No templates defined"))
+         ((zerop warning-count)
+          (if (= template-count 1)
+              (message "Template is valid (only one defined)")
+            (message "All %d templates are valid" template-count)))
+         ((= template-count warning-count)
+          (if (= template-count 1)
+              (message "Template is invalid (only one defined)")
+            (message "All %d templates are invalid" template-count)))
+         (t
+          (message "%s valid, %s invalid"
+                   (if (= warning-count (1- template-count))
+                       "1 template is"
+                     (format "%d templates are" (- template-count warning-count)))
+                   (if (= warning-count 1)
+                       "1 template is"
+                     (format "%d templates are" warning-count))))))
+    (run-hooks 'el-patch-post-validate-hook)))
+
 
 (provide 'el-patch-template)
 
