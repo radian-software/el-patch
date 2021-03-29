@@ -640,12 +640,14 @@ is the Lisp form, read from the buffer at point."
                               ,@body))))
           (defun-buffer (car buffer-point))
           (defun-point (cdr buffer-point)))
-     (and defun-buffer
-          defun-point
-          (with-current-buffer defun-buffer
-            (save-excursion
-              (goto-char defun-point)
-              (read (current-buffer)))))))
+     (prog1 (and defun-buffer
+                 defun-point
+                 (with-current-buffer defun-buffer
+                   (save-excursion
+                     (goto-char defun-point)
+                     (read (current-buffer)))))
+       (when defun-buffer
+         (kill-buffer defun-buffer)))))
 
 (defun el-patch-locate-variable (definition)
   "Return the source code of DEFINITION.

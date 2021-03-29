@@ -520,7 +520,7 @@ changed to `el-patch-template--concat'."
                   (apply old-concat args)))))
     (el-patch--resolve forms nil)))
 
-;; Stolen from el-patch
+;; Stolen from el-patch--select
 (defun el-patch--select-template ()
   "Use `completing-read' to select a template.
 Return a list of two elements, the name (a symbol) of the object
@@ -650,7 +650,7 @@ matching are done when the functions `el-patch-eval-template' or
   `(el-patch--define-template (quote ,type-name)
                               (quote ,templates)))
 
-(defmacro el-patch-define-compiletime-template (type-name &rest templates)
+(defmacro el-patch-define-and-eval-template (type-name &rest templates)
   "Define and evaluate an el-patch template.
 
 The meaning of TYPE-NAME and TEMPLATES are the same as
@@ -688,6 +688,7 @@ can be slow, consider byte-compiling."))
                                (car qtype-name)))))
 
 
+;; Stolen from `el-patch-validate'
 ;;;###autoload
 (defun el-patch-validate-template (name type &optional nomsg run-hooks)
   "Validate the template with given NAME and TYPE.
@@ -735,6 +736,7 @@ See also `el-patch-validate-all'."
     (when run-hooks
       (run-hooks 'el-patch-post-validate-hook))))
 
+;; Stolen from `el-patch-validate-all'
 ;;;###autoload
 (defun el-patch-validate-all-templates ()
   "Validate all currently defined patches.
@@ -768,7 +770,8 @@ See `el-patch-validate-template'."
           (message "%s valid, %s invalid"
                    (if (= warning-count (1- template-count))
                        "1 template is"
-                     (format "%d templates are" (- template-count warning-count)))
+                     (format "%d templates are"
+                             (- template-count warning-count)))
                    (if (= warning-count 1)
                        "1 template is"
                      (format "%d templates are" warning-count))))))
