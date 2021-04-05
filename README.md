@@ -544,7 +544,7 @@ keyword, then a call to `el-patch-feature` is inserted into the
 
 ## Templates
 
-In some cases, you may want to patch on or two forms in a long
+In some cases, you may want to patch one or two forms in a long
 definition of a function or a macro. Defining the patch would still
 require copying all unpatched forms and updating the patch when these
 forms change. For these cases, it would be better if we can simply
@@ -582,7 +582,7 @@ Had we wanted to simply patch the function we would pass `(defun
 restart-emacs)` as the first argument. Every other argument defines a
 template for a patch. To build the final patch, every argument is
 resolved to figure out the original form which is then matched against
-all forms in the original definition of the object, and if uniquely
+all forms in the original definition of the object and, if uniquely
 found, the patch is spliced in its place. The special form `...` is
 used to match one or more forms or, if it is inside `el-patch-concat`
 as above, one or more characters in a string. Patch templates need not

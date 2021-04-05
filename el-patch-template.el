@@ -44,6 +44,7 @@
 (require 'el-patch)
 
 ;;;;;; Internal functions and variables:
+;;;###autoload
 (defvar el-patch--templates (make-hash-table :test 'equal)
   "Hash table of templates that have been defined.
 The keys are symbols naming the objects that have been patched.
@@ -172,7 +173,7 @@ TABLE is a hashtable containing the bindings of `el-patch-let'"
                                              ;;"[\0-\377[:nonascii:]]*"
                                              ;; match any
                                              ;; character
-                                             "\\(\\(?:.\\|\n\\)*\\)"
+                                             "\\(\\(?:.\\|\n\\)+\\)"
                                            (regexp-quote x)))
                                        resolved)))
                (match-no 1) split-form)
@@ -415,7 +416,7 @@ match is not possible."
                               (if (and (equal x '...))
                                   ;; match any character
                                   ;;"[\0-\377[:nonascii:]]*"
-                                  "\\(.\\|\n\\)*"
+                                  "\\(.\\|\n\\)+"
                                 (regexp-quote x)))
                             (cdr template)))
      form))
@@ -613,6 +614,7 @@ rather than in compile time."
   :type 'boolean
   :group 'el-patch)
 
+;;;###autoload
 (defun el-patch-insert-template (name type)
   "Resolve a template to an el-patch definition and insert it at point.
 
@@ -623,6 +625,7 @@ being patched; TYPE is a symbol `defun', `defmacro', etc."
   (insert (format "%S"
                   (el-patch--resolve-template name type))))
 
+;;;###autoload
 (defun el-patch-eval-template (name type)
   "Resolve a template to an el-patch definition and evaluate it.
 
@@ -632,6 +635,7 @@ being patched; TYPE is a symbol `defun', `defmacro', etc."
   (interactive (el-patch--select-template))
   (eval (el-patch--resolve-template name type)))
 
+;;;###autoload
 (defmacro el-patch-define-template (type-name &rest templates)
   "Define an el-patch template.
 TYPE-NAME is a list whose first element is a type which can be
@@ -650,6 +654,7 @@ matching are done when the functions `el-patch-eval-template' or
   `(el-patch--define-template (quote ,type-name)
                               (quote ,templates)))
 
+;;;###autoload
 (defmacro el-patch-define-and-eval-template (type-name &rest templates)
   "Define and evaluate an el-patch template.
 
