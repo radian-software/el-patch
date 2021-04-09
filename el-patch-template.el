@@ -381,33 +381,40 @@ remaining unmatched forms."
                  (throw 'no-match nil)))))
           (throw 'no-match nil))))))
 
-(defun el-patch--match-template-p (form template)
+(defun el-patch--match-template-p (form
+                                   template
+                                   &optional full-match)
   "Check if the forms in FORM match TEMPLATE.
 TEMPLATE may contain `...' which greedily matches any number of
 forms in FORM. Match is successful if a partial list of FORM,
 starting from the beginning, matches TEMPLATE. The return value
 is the number of forms in FORM which match TEMPLATE or nil if a
-match is not possible."
+match is not possible. If FULL-MATCH then perform a full match
+and return t if all forms in FORM match TEMPLATE."
   (cond
    ((and (consp template) (consp form))
     (when-let ((matched-count
                 (if (member (car template) '(...))
                     (or
                      (el-patch--match-template-p (cdr form)
-                                                 template)
+                                                 template
+                                                 full-match)
                      ;; If we are here, we failed so try consuming
                      ;; `...'
                      (el-patch--match-template-p (cdr form)
-                                                 (cdr template)))
+                                                 (cdr template)
+                                                 full-match))
                   (and
                    (el-patch--match-template-p (car form)
-                                               (car template))
+                                               (car template) t) ;; Full match
                    (el-patch--match-template-p (cdr form)
-                                               (cdr template))))))
-      (1+ matched-count)))
+                                               (cdr template) full-match)))))
+      (if full-match
+          matched-count
+        (1+ matched-count))))
    ((and (vectorp template) (vectorp form))
     (el-patch--match-template-p (append form nil);; covert to list
-                                (append template nil)))
+                                (append template nil) t))
    ((and (consp template)
          (equal (car template) 'el-patch-template--concat)
          (stringp form))
@@ -420,7 +427,10 @@ match is not possible."
                                 (regexp-quote x)))
                             (cdr template)))
      form))
-   (t (or (and (null template) 0)
+   (t (or (and (null template)
+               (if full-match
+                   (null form)
+                 0))
           (and (or (member template '(...))
                    (equal template form))
                (if (consp form)
