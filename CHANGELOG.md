@@ -6,7 +6,8 @@ The format is based on [Keep a Changelog].
 ## Unreleased
 ### New features
 * New way to patch elisp objects based on a partial template and the
-  original definition the object ([#50]).
+  original definition the object ([#50]). See the documentation on
+  `el-patch-template` in the README.
 
 ### Bugs fixed
 * Patch forms were not processed when they appeared inside a vector.

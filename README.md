@@ -590,16 +590,17 @@ be, or even contain, `el-patch-*` directives. For example, the purpose
 of the argument `(restart-args ...)` is to make sure that such a form
 exists in the function definition without actually patching it.
 
-After defining the template, you can call `el-patch-insert-template`
-to insert the patch definition in the current buffer based on the
-defined template. Alternatively, you may call `el-patch-eval-template`
-which directly evaluates the patch. The function
-`el-patch-define-and-eval-template` defines and evaluates a template
-in one go. It is recommended that you compile your init-file if you
-use `el-patch-define-and-eval-template` to avoid the overhead of
-template matching when starting Emacs. `el-patch` will issue a warning
-if `el-patch-define-and-eval-template` is called at runtime and
-`el-patch-warn-on-eval-template` is non-nil (which is the default).
+After defining the template, you can run the interactive command
+`el-patch-insert-template` to insert the patch definition in the
+current buffer based on the defined template. Alternatively, you may
+use the command `el-patch-eval-template` which directly evaluates the
+patch. The function `el-patch-define-and-eval-template` defines and
+evaluates a template in one go. It is recommended that you compile
+your init-file if you use `el-patch-define-and-eval-template` to avoid
+the overhead of template matching when starting Emacs. `el-patch` will
+issue a warning if `el-patch-define-and-eval-template` is called at
+runtime and `el-patch-warn-on-eval-template` is non-nil (which is the
+default).
 
 Templates assume that the original definition of the object is
 accessible, for example, using `find-function-noselect` for functions.
