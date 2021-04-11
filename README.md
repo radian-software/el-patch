@@ -23,6 +23,7 @@
 - [Lazy-loading packages](#lazy-loading-packages)
 - [Validating patches that are not loaded yet](#validating-patches-that-are-not-loaded-yet)
 - [Integration with `use-package`](#integration-with-use-package)
+- [Templates](#templates)
 - [Usage with byte-compiled init-file](#usage-with-byte-compiled-init-file)
 - [But how does it work?](#but-how-does-it-work)
 - [But how does it actually work?](#but-how-does-it-actually-work)
@@ -541,6 +542,73 @@ macro are left as is.) The resulting code is prepended to the code in
 keyword, then a call to `el-patch-feature` is inserted into the
 `:init` section.
 
+## Templates
+
+In some cases, you may want to patch one or two forms in a long
+definition of a function or a macro. Defining the patch would still
+require copying all unpatched forms and updating the patch when these
+forms change. For these cases, it would be better if we can simply
+search for the forms that we want to patch in the original definition
+and patch only those. Enter `el-patch` templates.
+
+As an example, say we want to define a patch of `restart-emacs` so
+that the it starts a new emacs instance without killing the current
+one. Instead of defining a patch that includes the complete definition
+of `restart-emacs`, we can define a template as follows
+
+    (el-patch-define-template
+      (defun (el-patch-swap restart-emacs radian-new-emacs))
+      (el-patch-concat
+        (el-patch-swap
+          "Restart Emacs."
+          "Start a new Emacs session without killing the current one.")
+        ...
+        (el-patch-swap "restarted" "started")
+        ...
+        (el-patch-swap "restarted" "started")
+        ...
+        (el-patch-swap "restarted" "started")
+        ...)
+      (restart-args ...)
+      (el-patch-remove (kill-emacs-hook ...))
+      (el-patch-swap
+        (save-buffers-kill-emacs)
+        (restart-emacs--launch-other-emacs restart-args)))
+
+The first argument is a list that comprises the type, `defun` in this
+case, and the name of the object that we are patching. Using an
+`el-patch-swap` here allows us to define a fork, `radian-new-emacs`.
+Had we wanted to simply patch the function we would pass `(defun
+restart-emacs)` as the first argument. Every other argument defines a
+template for a patch. To build the final patch, every argument is
+resolved to figure out the original form which is then matched against
+all forms in the original definition of the object and, if uniquely
+found, the patch is spliced in its place. The special form `...` is
+used to match one or more forms or, if it is inside `el-patch-concat`
+as above, one or more characters in a string. Patch templates need not
+be, or even contain, `el-patch-*` directives. For example, the purpose
+of the argument `(restart-args ...)` is to make sure that such a form
+exists in the function definition without actually patching it.
+
+After defining the template, you can run the interactive command
+`el-patch-insert-template` to insert the patch definition in the
+current buffer based on the defined template. Alternatively, you may
+use the command `el-patch-eval-template` which directly evaluates the
+patch. The function `el-patch-define-and-eval-template` defines and
+evaluates a template in one go. It is recommended that you compile
+your init-file if you use `el-patch-define-and-eval-template` to avoid
+the overhead of template matching when starting Emacs. `el-patch` will
+issue a warning if `el-patch-define-and-eval-template` is called at
+runtime and `el-patch-warn-on-eval-template` is non-nil (which is the
+default).
+
+Templates assume that the original definition of the object is
+accessible, for example, using `find-function-noselect` for functions.
+
+Like patches, templates can be validated using
+`el-patch-validate-template` and `el-patch-validate-all-templates`.
+
+
 ## Usage with byte-compiled init-file
 
 `el-patch` does not need to be loaded at runtime just to define
@@ -562,7 +630,7 @@ Magic.
 
 The basic idea is simple. When a patch is defined, the patch
 definition is resolved to figure out the modified definition is. Then
-that definition is installed by evaluating it (but using
+that definition is installed by evaluating it (by using
 `el-patch--stealthy-eval`, so that looking up the function definition
 will return the original location rather than the `el-patch`
 invocation location, and also using `makunbound` to override a
