@@ -544,9 +544,11 @@ patched. NAME and TYPE are as returned by `el-patch-get'."
       (type &rest kwargs &key classify locate declare macro-name)
     "Allow `el-patch' to patch definitions of the given TYPE.
 TYPE is a symbol like `defun', `define-minor-mode', etc. This
-updates `el-patch-deftype-alist' (which see) with the provided
-keyword arguments and defines a macro named like
-`el-patch-defun', `el-patch-define-minor-mode', etc."
+updates `el-patch-deftype-alist' (which see for explanations of
+CLASSIFY, LOCATE, and DECLARE) with the provided KWARGS and
+defines a macro named like `el-patch-defun',
+`el-patch-define-minor-mode', etc. (which can be overridden by
+MACRO-NAME)."
     (declare (indent defun))
     (ignore locate)
     (unless classify
