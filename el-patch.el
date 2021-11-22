@@ -536,37 +536,34 @@ patched. NAME and TYPE are as returned by `el-patch-get'."
 
 ;;;; Defining patch types
 
-;; Use `progn' to cause the entire macro definition to be autoloaded
-;; rather than just a stub.
 ;;;###autoload
-(progn
-  (cl-defmacro el-patch-deftype
-      (type &rest kwargs &key classify locate declare macro-name)
-    "Allow `el-patch' to patch definitions of the given TYPE.
+(cl-defmacro el-patch-deftype
+    (type &rest kwargs &key classify locate declare macro-name)
+  "Allow `el-patch' to patch definitions of the given TYPE.
 TYPE is a symbol like `defun', `define-minor-mode', etc. This
 updates `el-patch-deftype-alist' (which see for explanations of
 CLASSIFY, LOCATE, and DECLARE) with the provided KWARGS and
 defines a macro named like `el-patch-defun',
 `el-patch-define-minor-mode', etc. (which can be overridden by
 MACRO-NAME)."
-    (declare (indent defun))
-    (ignore locate)
-    (unless classify
-      (error "You must specify `:classify' in calls to `el-patch-deftype'"))
-    `(progn
-       (setf (alist-get ',type el-patch-deftype-alist)
-             ;; Make sure we don't accidentally create self-modifying
-             ;; code if somebody decides to mutate
-             ;; `el-patch-deftype-alist'.
-             (copy-tree ',kwargs))
-       (defmacro ,(or macro-name (intern (format "el-patch-%S" type)))
-           (name &rest args)
-         ,(format "Use `el-patch' to override a `%S' form.
+  (declare (indent defun))
+  (ignore locate)
+  (unless classify
+    (error "You must specify `:classify' in calls to `el-patch-deftype'"))
+  `(progn
+     (setf (alist-get ',type el-patch-deftype-alist)
+           ;; Make sure we don't accidentally create self-modifying
+           ;; code if somebody decides to mutate
+           ;; `el-patch-deftype-alist'.
+           (copy-tree ',kwargs))
+     (defmacro ,(or macro-name (intern (format "el-patch-%S" type)))
+         (name &rest args)
+       ,(format "Use `el-patch' to override a `%S' form.
 The ARGS are the same as for `%S'."
-                  type type)
-         ,@(when declare
-             `((declare ,@declare)))
-         (list #'el-patch--definition (cl-list* ',type name args))))))
+                type type)
+       ,@(when declare
+           `((declare ,@declare)))
+       (list #'el-patch--definition (cl-list* ',type name args)))))
 
 ;;;;; Classification functions
 
