@@ -664,56 +664,56 @@ DEFINITION is a list starting with `defun' or similar."
 
 ;; These are alphabetized.
 
-;;;###autoload
+;;;###autoload (autoload 'el-patch-cl-defun "el-patch")
 (el-patch-deftype cl-defun
   :classify el-patch-classify-function
   :locate el-patch-locate-function
   :declare ((doc-string 3)
             (indent defun)))
 
-;;;###autoload
+;;;###autoload (autoload 'el-patch-defconst "el-patch")
 (el-patch-deftype defconst
   :classify el-patch-classify-variable
   :locate el-patch-locate-variable
   :declare ((doc-string 3)
             (indent defun)))
 
-;;;###autoload
+;;;###autoload (autoload 'el-patch-defcustom "el-patch")
 (el-patch-deftype defcustom
   :classify el-patch-classify-variable
   :locate el-patch-locate-variable
   :declare ((doc-string 3)
             (indent defun)))
 
-;;;###autoload
+;;;###autoload (autoload 'el-patch-define-minor-mode "el-patch")
 (el-patch-deftype define-minor-mode
   :classify el-patch-classify-define-minor-mode
   :locate el-patch-locate-function
   :declare ((doc-string 2)
             (indent defun)))
 
-;;;###autoload
+;;;###autoload (autoload 'el-patch-defmacro "el-patch")
 (el-patch-deftype defmacro
   :classify el-patch-classify-function
   :locate el-patch-locate-function
   :declare ((doc-string 3)
             (indent defun)))
 
-;;;###autoload
+;;;###autoload (autoload 'el-patch-defsubst "el-patch")
 (el-patch-deftype defsubst
   :classify el-patch-classify-function
   :locate el-patch-locate-function
   :declare ((doc-string 3)
             (indent defun)))
 
-;;;###autoload
+;;;###autoload (autoload 'el-patch-defun "el-patch")
 (el-patch-deftype defun
   :classify el-patch-classify-function
   :locate el-patch-locate-function
   :declare ((doc-string 3)
             (indent defun)))
 
-;;;###autoload
+;;;###autoload (autoload 'el-patch-defvar "el-patch")
 (el-patch-deftype defvar
   :classify el-patch-classify-variable
   :locate el-patch-locate-variable
