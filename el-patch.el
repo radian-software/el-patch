@@ -134,10 +134,6 @@ loaded. You can toggle the `use-package' integration later using
 
 ;;;; Internal variables
 
-;; We autoload `el-patch--patches' so that patches can be defined at
-;; runtime without having `el-patch' loaded.
-
-;;;###autoload
 (defvar el-patch--patches (make-hash-table :test 'equal)
   "Hash table of patches that have been defined.
 The keys are symbols naming the objects that have been patched.
@@ -508,12 +504,14 @@ PATCH-DEFINITION is an unquoted list starting with `defun',
          ;; away so that if there is an error then at least the user
          ;; can undo the patch (as long as it is not too terribly
          ;; wrong).
-         (puthash ',type
-                  ',patch-definition
-                  (or (gethash ',name el-patch--patches)
-                      (puthash ',name
-                               (make-hash-table :test #'equal)
-                               el-patch--patches)))
+         (let ((patches (or (bound-and-true-p el-patch--patches)
+                            (make-hash-table :test #'equal))))
+           (puthash ',type
+                    ',patch-definition
+                    (or (gethash ',name patches)
+                        (puthash ',name
+                                 (make-hash-table :test #'equal)
+                                 patches))))
          ;; Now we actually overwrite the current definition.
          (el-patch--stealthy-eval
           ,definition
