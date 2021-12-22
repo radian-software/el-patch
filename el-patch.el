@@ -83,7 +83,6 @@ provided by lazy-installed packages, and those packages need to
 be installed before the features can be loaded."
   :type 'function)
 
-;;;###autoload
 (defcustom el-patch-deftype-alist nil
   "Alist of types of definitions that can be patched with `el-patch'.
 The keys are definition types, like `defun', `define-minor-mode',
@@ -549,6 +548,8 @@ MACRO-NAME)."
   (unless classify
     (error "You must specify `:classify' in calls to `el-patch-deftype'"))
   `(progn
+     (unless (bound-and-true-p el-patch-deftype-alist)
+       (setq el-patch-deftype-alist nil))
      (setf (alist-get ',type el-patch-deftype-alist)
            ;; Make sure we don't accidentally create self-modifying
            ;; code if somebody decides to mutate
@@ -562,6 +563,7 @@ The ARGS are the same as for `%S'."
        ,@(when declare
            `((declare ,@declare)))
        (list #'el-patch--definition (cl-list* ',type name args)))))
+(put 'el-patch-deftype 'el-patch-defined-properly t)
 
 ;;;;; Classification functions
 
@@ -660,58 +662,61 @@ DEFINITION is a list starting with `defun' or similar."
 
 ;;;;; Predefined patch types
 
+;;;###autoload(require 'el-patch-stub)
+;;;###autoload(el-patch--deftype-stub-setup)
+
 ;; These are alphabetized.
 
-;;;###autoload (autoload 'el-patch-cl-defun "el-patch")
+;;;###autoload
 (el-patch-deftype cl-defun
   :classify el-patch-classify-function
   :locate el-patch-locate-function
   :declare ((doc-string 3)
             (indent defun)))
 
-;;;###autoload (autoload 'el-patch-defconst "el-patch")
+;;;###autoload
 (el-patch-deftype defconst
   :classify el-patch-classify-variable
   :locate el-patch-locate-variable
   :declare ((doc-string 3)
             (indent defun)))
 
-;;;###autoload (autoload 'el-patch-defcustom "el-patch")
+;;;###autoload
 (el-patch-deftype defcustom
   :classify el-patch-classify-variable
   :locate el-patch-locate-variable
   :declare ((doc-string 3)
             (indent defun)))
 
-;;;###autoload (autoload 'el-patch-define-minor-mode "el-patch")
+;;;###autoload
 (el-patch-deftype define-minor-mode
   :classify el-patch-classify-define-minor-mode
   :locate el-patch-locate-function
   :declare ((doc-string 2)
             (indent defun)))
 
-;;;###autoload (autoload 'el-patch-defmacro "el-patch")
+;;;###autoload
 (el-patch-deftype defmacro
   :classify el-patch-classify-function
   :locate el-patch-locate-function
   :declare ((doc-string 3)
             (indent defun)))
 
-;;;###autoload (autoload 'el-patch-defsubst "el-patch")
+;;;###autoload
 (el-patch-deftype defsubst
   :classify el-patch-classify-function
   :locate el-patch-locate-function
   :declare ((doc-string 3)
             (indent defun)))
 
-;;;###autoload (autoload 'el-patch-defun "el-patch")
+;;;###autoload
 (el-patch-deftype defun
   :classify el-patch-classify-function
   :locate el-patch-locate-function
   :declare ((doc-string 3)
             (indent defun)))
 
-;;;###autoload (autoload 'el-patch-defvar "el-patch")
+;;;###autoload
 (el-patch-deftype defvar
   :classify el-patch-classify-variable
   :locate el-patch-locate-variable
