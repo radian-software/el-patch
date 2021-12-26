@@ -13,8 +13,29 @@ The format is based on [Keep a Changelog].
 * Patch forms were not processed when they appeared inside a vector.
   This has been fixed ([#51]).
 
+### Internal changes
+* The autoloading mechanism used by `el-patch` has changed, reducing
+  the amount of work that is done at startup and simplifying the
+  implementation ([#56]). The user-facing impact is as follows:
+    * `el-patch--patches` and `el-patch-deftype-alist` are no longer
+      autoloaded. If you use a compiled init-file, you may need to
+      recompile it with the new version of `el-patch`; the code
+      compiled with the old version of `el-patch` will not work at
+      runtime with the new version of `el-patch`. However, evaluating
+      patches in a compiled init-file, even one that uses
+      `el-patch-deftype`, still does not load `el-patch`.
+    * `el-patch-defun` and analogous functions are now autoloaded,
+      rather than fully defined at init time. This should not matter
+      since a compiled init-file would have macroexpanded these into
+      smaller components that do not have runtime dependencies on
+      `el-patch`.
+    * There is a new file `el-patch-stub.el` that needs to be on the
+      `load-path` for autoloads to work. This should be taken care of
+      automatically by any of the popular Emacs package managers.
+
 [#50]: https://github.com/raxod502/el-patch/issues/50
 [#51]: https://github.com/raxod502/el-patch/issues/51
+[#56]: https://github.com/raxod502/el-patch/pull/56
 
 ## 2.3.1 (released 2020-07-16)
 ### Bugs fixed

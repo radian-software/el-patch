@@ -83,7 +83,6 @@ provided by lazy-installed packages, and those packages need to
 be installed before the features can be loaded."
   :type 'function)
 
-;;;###autoload
 (defcustom el-patch-deftype-alist nil
   "Alist of types of definitions that can be patched with `el-patch'.
 The keys are definition types, like `defun', `define-minor-mode',
@@ -134,10 +133,6 @@ loaded. You can toggle the `use-package' integration later using
 
 ;;;; Internal variables
 
-;; We autoload `el-patch--patches' so that patches can be defined at
-;; runtime without having `el-patch' loaded.
-
-;;;###autoload
 (defvar el-patch--patches (make-hash-table :test 'equal)
   "Hash table of patches that have been defined.
 The keys are symbols naming the objects that have been patched.
@@ -508,12 +503,14 @@ PATCH-DEFINITION is an unquoted list starting with `defun',
          ;; away so that if there is an error then at least the user
          ;; can undo the patch (as long as it is not too terribly
          ;; wrong).
-         (puthash ',type
-                  ',patch-definition
-                  (or (gethash ',name el-patch--patches)
-                      (puthash ',name
-                               (make-hash-table :test #'equal)
-                               el-patch--patches)))
+         (let ((patches (or (bound-and-true-p el-patch--patches)
+                            (make-hash-table :test #'equal))))
+           (puthash ',type
+                    ',patch-definition
+                    (or (gethash ',name patches)
+                        (puthash ',name
+                                 (make-hash-table :test #'equal)
+                                 patches))))
          ;; Now we actually overwrite the current definition.
          (el-patch--stealthy-eval
           ,definition
@@ -536,37 +533,37 @@ patched. NAME and TYPE are as returned by `el-patch-get'."
 
 ;;;; Defining patch types
 
-;; Use `progn' to cause the entire macro definition to be autoloaded
-;; rather than just a stub.
 ;;;###autoload
-(progn
-  (cl-defmacro el-patch-deftype
-      (type &rest kwargs &key classify locate declare macro-name)
-    "Allow `el-patch' to patch definitions of the given TYPE.
+(cl-defmacro el-patch-deftype
+    (type &rest kwargs &key classify locate declare macro-name)
+  "Allow `el-patch' to patch definitions of the given TYPE.
 TYPE is a symbol like `defun', `define-minor-mode', etc. This
 updates `el-patch-deftype-alist' (which see for explanations of
 CLASSIFY, LOCATE, and DECLARE) with the provided KWARGS and
 defines a macro named like `el-patch-defun',
 `el-patch-define-minor-mode', etc. (which can be overridden by
 MACRO-NAME)."
-    (declare (indent defun))
-    (ignore locate)
-    (unless classify
-      (error "You must specify `:classify' in calls to `el-patch-deftype'"))
-    `(progn
-       (setf (alist-get ',type el-patch-deftype-alist)
-             ;; Make sure we don't accidentally create self-modifying
-             ;; code if somebody decides to mutate
-             ;; `el-patch-deftype-alist'.
-             (copy-tree ',kwargs))
-       (defmacro ,(or macro-name (intern (format "el-patch-%S" type)))
-           (name &rest args)
-         ,(format "Use `el-patch' to override a `%S' form.
+  (declare (indent defun))
+  (ignore locate)
+  (unless classify
+    (error "You must specify `:classify' in calls to `el-patch-deftype'"))
+  `(progn
+     (unless (bound-and-true-p el-patch-deftype-alist)
+       (setq el-patch-deftype-alist nil))
+     (setf (alist-get ',type el-patch-deftype-alist)
+           ;; Make sure we don't accidentally create self-modifying
+           ;; code if somebody decides to mutate
+           ;; `el-patch-deftype-alist'.
+           (copy-tree ',kwargs))
+     (defmacro ,(or macro-name (intern (format "el-patch-%S" type)))
+         (name &rest args)
+       ,(format "Use `el-patch' to override a `%S' form.
 The ARGS are the same as for `%S'."
-                  type type)
-         ,@(when declare
-             `((declare ,@declare)))
-         (list #'el-patch--definition (cl-list* ',type name args))))))
+                type type)
+       ,@(when declare
+           `((declare ,@declare)))
+       (list #'el-patch--definition (cl-list* ',type name args)))))
+(put 'el-patch-deftype 'el-patch-defined-properly t)
 
 ;;;;; Classification functions
 
@@ -664,6 +661,9 @@ DEFINITION is a list starting with `defun' or similar."
     (find-function-noselect (nth 1 definition) 'lisp-only)))
 
 ;;;;; Predefined patch types
+
+;;;###autoload(require 'el-patch-stub)
+;;;###autoload(el-patch--deftype-stub-setup)
 
 ;; These are alphabetized.
 
