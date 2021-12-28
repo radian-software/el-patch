@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
-## Unreleased
+## 2.4 (released 2021-12-27)
 ### New features
 * New way to patch elisp objects based on a partial template and the
   original definition the object ([#50]). See the documentation on
