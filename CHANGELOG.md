@@ -3,16 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
-## 2.4 (released 2021-12-27)
-### New features
-* New way to patch elisp objects based on a partial template and the
-  original definition the object ([#50]). See the documentation on
-  `el-patch-template` in the README.
-
-### Bugs fixed
-* Patch forms were not processed when they appeared inside a vector.
-  This has been fixed ([#51]).
-
+## Unreleased
 ### Internal changes
 * The autoloading mechanism used by `el-patch` has changed, reducing
   the amount of work that is done at startup and simplifying the
@@ -33,9 +24,20 @@ The format is based on [Keep a Changelog].
       `load-path` for autoloads to work. This should be taken care of
       automatically by any of the popular Emacs package managers.
 
+[#56]: https://github.com/raxod502/el-patch/pull/56
+
+## 2.4 (released 2021-12-27)
+### New features
+* New way to patch elisp objects based on a partial template and the
+  original definition the object ([#50]). See the documentation on
+  `el-patch-template` in the README.
+
+### Bugs fixed
+* Patch forms were not processed when they appeared inside a vector.
+  This has been fixed ([#51]).
+
 [#50]: https://github.com/raxod502/el-patch/issues/50
 [#51]: https://github.com/raxod502/el-patch/issues/51
-[#56]: https://github.com/raxod502/el-patch/pull/56
 
 ## 2.3.1 (released 2020-07-16)
 ### Bugs fixed
