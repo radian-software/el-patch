@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
 ## Unreleased
+### Breaking changes
+* The arguments to `el-patch-feature` after the feature name are no
+  longer quoted by `el-patch-feature` before being passed to
+  `el-patch-require-function`. This means you can write them as normal
+  function arguments instead as unquoted symbols.
+* The default value of `el-patch-require-function` has changed from
+  `require` to `el-patch-default-require-function`, which ignores all
+  arguments to `el-patch-feature` aside from the feature name, and
+  converts `require` errors to warnings ([#47]).
+
 ### Enhancements
 * All `el-patch` forms are now fontified the same way as their
   built-in counterparts, e.g. the function name in an `el-patch-defun`
@@ -31,6 +41,7 @@ The format is based on [Keep a Changelog].
       automatically by any of the popular Emacs package managers.
 
 [#35]: https://github.com/raxod502/el-patch/issues/35
+[#47]: https://github.com/raxod502/el-patch/issues/47
 [#56]: https://github.com/raxod502/el-patch/pull/56
 
 ## 2.4 (released 2021-12-27)

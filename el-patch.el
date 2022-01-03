@@ -74,7 +74,18 @@ This means that `el-patch-defvar', `el-patch-defconst', and
 before evaluating the new one."
   :type 'boolean)
 
-(defcustom el-patch-require-function #'require
+(defun el-patch-default-require-function (feature &rest _args)
+  "Invoke `require' on FEATURE, printing warning if it is unavailable.
+This is the default value for `el-patch-require-function'."
+  (condition-case-unless-debug e
+      (require feature)
+    (error (display-warning
+            'el-patch
+            (format "On el-patch-pre-validate-hook: %s"
+                    (error-message-string e))
+            :error))))
+
+(defcustom el-patch-require-function #'el-patch-default-require-function
   "Function to `require' a feature in `el-patch-pre-validate-hook'.
 This is passed all of the arguments of `el-patch-feature' as
 quoted literals, and it should load the feature. This function
@@ -906,13 +917,12 @@ This is a convenience macro that creates a function for invoking
 `el-patch' can properly validate them.
 
 FEATURE should be an unquoted symbol. ARGS, if given, are passed
-as quoted literals along with FEATURE to
-`el-patch-require-function' when `el-patch-validate-all' is
-called."
+unchanged along with FEATURE to `el-patch-require-function' when
+`el-patch-validate-all' is called."
   (let ((defun-name (intern (format "el-patch-require-%S" feature))))
     `(progn
        (defun ,defun-name ()
-         (apply el-patch-require-function ',feature ',args))
+         (funcall el-patch-require-function ',feature ,@args))
        (add-hook 'el-patch-pre-validate-hook #',defun-name))))
 
 ;;;; Viewing patches
