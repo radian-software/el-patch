@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
 ## Unreleased
+### Enhancements
+* All `el-patch` forms are now fontified the same way as their
+  built-in counterparts, e.g. the function name in an `el-patch-defun`
+  is fontified the same as the function name in a `defun` would be.
+  See [#35].
+
 ### Internal changes
 * The autoloading mechanism used by `el-patch` has changed, reducing
   the amount of work that is done at startup and simplifying the
@@ -24,6 +30,7 @@ The format is based on [Keep a Changelog].
       `load-path` for autoloads to work. This should be taken care of
       automatically by any of the popular Emacs package managers.
 
+[#35]: https://github.com/raxod502/el-patch/issues/35
 [#56]: https://github.com/raxod502/el-patch/pull/56
 
 ## 2.4 (released 2021-12-27)

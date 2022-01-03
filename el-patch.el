@@ -113,7 +113,12 @@ This argument is optional.
 `:macro-name' - normally the name of the macro generated for
 patching a `defun' is called `el-patch-defun', but you can
 override that by providing this argument. This argument is
-optional."
+optional.
+
+`:font-lock' - a function that can be called to set up font-lock
+keywords (e.g., by calling `font-lock-add-keywords' with some
+appropriate arguments). The function is called with one argument,
+the macro name (e.g. `el-patch-defun')."
   :type '(alist
           :key-type symbol
           :value-type (plist
@@ -535,35 +540,37 @@ patched. NAME and TYPE are as returned by `el-patch-get'."
 
 ;;;###autoload
 (cl-defmacro el-patch-deftype
-    (type &rest kwargs &key classify locate declare macro-name)
+    (type &rest kwargs &key classify locate declare macro-name font-lock)
   "Allow `el-patch' to patch definitions of the given TYPE.
 TYPE is a symbol like `defun', `define-minor-mode', etc. This
 updates `el-patch-deftype-alist' (which see for explanations of
-CLASSIFY, LOCATE, and DECLARE) with the provided KWARGS and
-defines a macro named like `el-patch-defun',
+CLASSIFY, LOCATE, DECLARE, MACRO-NAME, and FONT-LOCK) with the
+provided KWARGS and defines a macro named like `el-patch-defun',
 `el-patch-define-minor-mode', etc. (which can be overridden by
 MACRO-NAME)."
   (declare (indent defun))
   (ignore locate)
   (unless classify
     (error "You must specify `:classify' in calls to `el-patch-deftype'"))
-  `(progn
-     (unless (bound-and-true-p el-patch-deftype-alist)
-       (setq el-patch-deftype-alist nil))
-     (setf (alist-get ',type el-patch-deftype-alist)
-           ;; Make sure we don't accidentally create self-modifying
-           ;; code if somebody decides to mutate
-           ;; `el-patch-deftype-alist'.
-           (copy-tree ',kwargs))
-     (defmacro ,(or macro-name (intern (format "el-patch-%S" type)))
-         (name &rest args)
-       ,(format "Use `el-patch' to override a `%S' form.
+  (let ((macro-name (or macro-name (intern (format "el-patch-%S" type)))))
+    `(progn
+       (unless (bound-and-true-p el-patch-deftype-alist)
+         (setq el-patch-deftype-alist nil))
+       (setf (alist-get ',type el-patch-deftype-alist)
+             ;; Make sure we don't accidentally create self-modifying
+             ;; code if somebody decides to mutate
+             ;; `el-patch-deftype-alist'.
+             (copy-tree ',kwargs))
+       ,@(when font-lock
+           `((,font-lock ',macro-name)))
+       (defmacro ,macro-name
+           (name &rest args)
+         ,(format "Use `el-patch' to override a `%S' form.
 The ARGS are the same as for `%S'."
-                type type)
-       ,@(when declare
-           `((declare ,@declare)))
-       (list #'el-patch--definition (cl-list* ',type name args)))))
-(put 'el-patch-deftype 'el-patch-defined-properly t)
+                  type type)
+         ,@(when declare
+             `((declare ,@declare)))
+         (list #'el-patch--definition (cl-list* ',type name args))))))
 
 ;;;;; Classification functions
 
@@ -593,6 +600,28 @@ similar."
       (setq kw-args (nthcdr 2 kw-args)))
     (list (cons 'function function-name)
           (cons 'variable variable-name))))
+
+;;;;; Font-lock functions
+
+(defun el-patch-fontify-as-defun (name)
+  "Fontify `el-patch' macro with given NAME as function definition."
+  (font-lock-add-keywords
+   'emacs-lisp-mode
+   `((,(concat
+        (format "(\\(%S\\)\\>[[:blank:]]+\\(" name)
+        lisp-mode-symbol-regexp
+        "\\)[[:blank:]]")
+      (2 font-lock-function-name-face)))))
+
+(defun el-patch-fontify-as-variable (name)
+  "Fontify `el-patch' macro with given NAME as variable definition."
+  (font-lock-add-keywords
+   'emacs-lisp-mode
+   `((,(concat
+        (format "(\\(%S\\)\\>[[:blank:]]+\\(" name)
+        lisp-mode-symbol-regexp
+        "\\)[[:blank:]]")
+      (2 font-lock-variable-name-face)))))
 
 ;;;;; Location functions
 
@@ -671,6 +700,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype cl-defun
   :classify el-patch-classify-function
   :locate el-patch-locate-function
+  :font-lock el-patch-fontify-as-defun
   :declare ((doc-string 3)
             (indent defun)))
 
@@ -678,6 +708,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype defconst
   :classify el-patch-classify-variable
   :locate el-patch-locate-variable
+  :font-lock el-patch-fontify-as-variable
   :declare ((doc-string 3)
             (indent defun)))
 
@@ -685,6 +716,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype defcustom
   :classify el-patch-classify-variable
   :locate el-patch-locate-variable
+  :font-lock el-patch-fontify-as-variable
   :declare ((doc-string 3)
             (indent defun)))
 
@@ -692,6 +724,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype define-minor-mode
   :classify el-patch-classify-define-minor-mode
   :locate el-patch-locate-function
+  :font-lock el-patch-fontify-as-defun
   :declare ((doc-string 2)
             (indent defun)))
 
@@ -699,6 +732,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype defmacro
   :classify el-patch-classify-function
   :locate el-patch-locate-function
+  :font-lock el-patch-fontify-as-defun
   :declare ((doc-string 3)
             (indent defun)))
 
@@ -706,6 +740,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype defsubst
   :classify el-patch-classify-function
   :locate el-patch-locate-function
+  :font-lock el-patch-fontify-as-defun
   :declare ((doc-string 3)
             (indent defun)))
 
@@ -713,6 +748,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype defun
   :classify el-patch-classify-function
   :locate el-patch-locate-function
+  :font-lock el-patch-fontify-as-defun
   :declare ((doc-string 3)
             (indent defun)))
 
@@ -720,6 +756,7 @@ DEFINITION is a list starting with `defun' or similar."
 (el-patch-deftype defvar
   :classify el-patch-classify-variable
   :locate el-patch-locate-variable
+  :font-lock el-patch-fontify-as-variable
   :declare ((doc-string 3)
             (indent defun)))
 

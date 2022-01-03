@@ -352,6 +352,7 @@ example, the `el-patch-defun` function is defined as follows:
     (el-patch-deftype defun
       :classify el-patch-classify-function
       :locate el-patch-locate-function
+      :font-lock el-patch-fontify-as-defun
       :declare ((doc-string 3)
                 (indent defun)))
 
