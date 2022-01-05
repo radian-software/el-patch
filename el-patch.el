@@ -614,6 +614,7 @@ similar."
 
 ;;;;; Font-lock functions
 
+;;;###autoload
 (defun el-patch-fontify-as-defun (name)
   "Fontify `el-patch' macro with given NAME as function definition."
   (font-lock-add-keywords
@@ -624,6 +625,7 @@ similar."
         "\\)[[:blank:]]")
       (2 font-lock-function-name-face)))))
 
+;;;###autoload
 (defun el-patch-fontify-as-variable (name)
   "Fontify `el-patch' macro with given NAME as variable definition."
   (font-lock-add-keywords
