@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog].
   arguments to `el-patch-feature` aside from the feature name, and
   converts `require` errors to warnings ([#47]).
 
+### Features
+* You can define patch variants using the new variable
+  `el-patch-variant`. For advanced usage. See [#29] for discussion.
+
 ### Enhancements
 * All `el-patch` forms are now fontified the same way as their
   built-in counterparts, e.g. the function name in an `el-patch-defun`
@@ -40,6 +44,7 @@ The format is based on [Keep a Changelog].
       `load-path` for autoloads to work. This should be taken care of
       automatically by any of the popular Emacs package managers.
 
+[#29]: https://github.com/raxod502/el-patch/issues/29
 [#35]: https://github.com/raxod502/el-patch/issues/35
 [#47]: https://github.com/raxod502/el-patch/issues/47
 [#56]: https://github.com/raxod502/el-patch/pull/56

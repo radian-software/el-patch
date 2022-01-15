@@ -24,6 +24,7 @@
 - [Validating patches that are not loaded yet](#validating-patches-that-are-not-loaded-yet)
 - [Integration with `use-package`](#integration-with-use-package)
 - [Templates](#templates)
+- [Patch variants](#patch-variants)
 - [Usage with byte-compiled init-file](#usage-with-byte-compiled-init-file)
 - [But how does it work?](#but-how-does-it-work)
 - [But how does it actually work?](#but-how-does-it-actually-work)
@@ -609,6 +610,15 @@ accessible, for example, using `find-function-noselect` for functions.
 Like patches, templates can be validated using
 `el-patch-validate-template` and `el-patch-validate-all-templates`.
 
+## Patch variants
+
+You can define multiple versions of the same patch. Normally,
+(re)defining a patch will just overwrite the old version entirely.
+However, if you dynamically bind `el-patch-variant` to a different
+(symbol) value for each call, then the latter patch is still the one
+that takes effect, but `el-patch` retains a record of both patches,
+meaning they can be inspected and validated individually. See
+[#29](https://github.com/raxod502/el-patch/issues/29).
 
 ## Usage with byte-compiled init-file
 
