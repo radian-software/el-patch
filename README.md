@@ -396,6 +396,13 @@ el-patch-ediff-conflict`.
 You can validate all the patches that have been defined so far using
 `M-x el-patch-validate-all`.
 
+Assuming you are byte-compiling your init-file, you can set
+`el-patch-validate-during-compile` to non-nil to validate patches when
+they are byte-compiled. There is no option to validate patches at
+runtime during startup because this makes startup incredibly slow.
+However, you could manually run `el-patch-validate-all` if such
+behavior is truly desired.
+
 ## Removing patches
 
 Use `M-x el-patch-unpatch`. Note that this does not technically remove

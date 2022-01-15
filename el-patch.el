@@ -147,6 +147,10 @@ loaded. You can toggle the `use-package' integration later using
 \\[el-patch-use-package-mode]."
   :type 'boolean)
 
+(defcustom el-patch-validate-during-compile nil
+  "Non-nil means to validate patches when byte-compiling."
+  :type 'boolean)
+
 ;;;; Internal variables
 
 (defvar el-patch-variant nil
@@ -532,31 +536,38 @@ PATCH-DEFINITION is an unquoted list starting with `defun',
   (let ((definition (el-patch--resolve-definition patch-definition t)))
     ;; Then we parse out the definition type and symbol name.
     (cl-destructuring-bind (type name . body) definition
-      `(progn
-         ;; Register the patch in our hash. We want to do this right
-         ;; away so that if there is an error then at least the user
-         ;; can undo the patch (as long as it is not too terribly
-         ;; wrong).
-         (let ((table (or (bound-and-true-p el-patch--patches)
-                          (make-hash-table :test #'eq))))
-           (setq el-patch--patches table)
-           (setq table
-                 (puthash ',name
-                          (gethash
-                           ',name table
-                           (make-hash-table :test #'eq))
-                          table))
-           (setq table
-                 (puthash ',type
-                          (gethash
-                           ',type table
-                           (make-hash-table :test #'eq))
-                          table))
-           (puthash el-patch-variant ',patch-definition table))
-         ;; Now we actually overwrite the current definition.
-         (el-patch--stealthy-eval
-          ,definition
-          "This function was patched by `el-patch'.")))))
+      (let ((register-patch
+             `(let ((table (or (bound-and-true-p el-patch--patches)
+                               (make-hash-table :test #'eq))))
+                (setq el-patch--patches table)
+                (setq table
+                      (puthash ',name
+                               (gethash
+                                ',name table
+                                (make-hash-table :test #'eq))
+                               table))
+                (setq table
+                      (puthash ',type
+                               (gethash
+                                ',type table
+                                (make-hash-table :test #'eq))
+                               table))
+                (puthash el-patch-variant ',patch-definition table))))
+        ;; If we need to validate the patch, then we also need to
+        ;; register it at compile-time, not just at runtime.
+        (when (and el-patch-validate-during-compile byte-compile-current-file)
+          (eval register-patch t)
+          (el-patch-validate name type 'nomsg nil el-patch-variant))
+        `(progn
+           ;; Register the patch in our hash. We want to do this right
+           ;; away so that if there is an error then at least the user
+           ;; can undo the patch (as long as it is not too terribly
+           ;; wrong).
+           ,register-patch
+           ;; Now we actually overwrite the current definition.
+           (el-patch--stealthy-eval
+            ,definition
+            "This function was patched by `el-patch'."))))))
 
 ;;;;; Removing patches
 

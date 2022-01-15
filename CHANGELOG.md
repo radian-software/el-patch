@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog].
 ### Features
 * You can define patch variants using the new variable
   `el-patch-variant`. For advanced usage. See [#29] for discussion.
+* You can validate patches automatically during byte-compilation by
+  setting `el-patch-validate-during-compile` to non-nil ([#48]).
 
 ### Enhancements
 * All `el-patch` forms are now fontified the same way as their
@@ -47,6 +49,7 @@ The format is based on [Keep a Changelog].
 [#29]: https://github.com/raxod502/el-patch/issues/29
 [#35]: https://github.com/raxod502/el-patch/issues/35
 [#47]: https://github.com/raxod502/el-patch/issues/47
+[#48]: https://github.com/raxod502/el-patch/issues/48
 [#56]: https://github.com/raxod502/el-patch/pull/56
 
 ## 2.4 (released 2021-12-27)
