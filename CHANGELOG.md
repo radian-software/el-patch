@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog].
   `require` to `el-patch-default-require-function`, which ignores all
   arguments to `el-patch-feature` aside from the feature name, and
   converts `require` errors to warnings ([#47]).
+* Emacs 25 is no longer supported.
 
 ### Features
 * You can define patch variants using the new variable

@@ -6,7 +6,7 @@
 ;; Created: 1 March 2021
 ;; Homepage: https://github.com/raxod502/el-patch
 ;; Keywords: extensions
-;; Package-Requires: ((emacs "25"))
+;; Package-Requires: ((emacs "26"))
 ;; SPDX-License-Identifier: MIT
 ;; Version: 2.4
 
