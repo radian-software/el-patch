@@ -22,4 +22,10 @@ docker build . -t "el-patch:$tag" \
        --build-arg "UID=$UID"        \
        --build-arg "VERSION=$tag"
 
-docker run -it --rm -v "$PWD:/home/docker/src" "el-patch:$tag" "${args[@]}"
+it=()
+
+if [[ -t 0 ]]; then
+    it+=(-it)
+fi
+
+docker run "${it[@]}" --rm -v "$PWD:/home/docker/src" "el-patch:$tag" "${args[@]}"
