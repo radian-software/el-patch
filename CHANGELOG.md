@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
-## Unreleased
+## 3.0 (released 2022-04-17)
 ### Breaking changes
 * The arguments to `el-patch-feature` after the feature name are no
   longer quoted by `el-patch-feature` before being passed to
