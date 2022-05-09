@@ -1,10 +1,10 @@
 ;;; el-patch-stub.el --- Functions loaded separately -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021 Radon Rosborough
+;; Copyright (C) 2021-2022 Radian LLC and contributors
 
-;; Author: Radon Rosborough <radon.neon@gmail.com>
+;; Author: Radian LLC <contact+el-patch@radian.codes>
 ;; Created: 21 Dec 2021
-;; Homepage: https://github.com/raxod502/el-patch
+;; Homepage: https://github.com/radian-software/el-patch
 ;; Keywords: extensions
 ;; Package-Requires: ((emacs "26"))
 ;; SPDX-License-Identifier: MIT
@@ -18,7 +18,7 @@
 ;; and indentation correctly for a number of different functions all
 ;; at once, without a bunch of code duplication.
 
-;; Please see https://github.com/raxod502/el-patch for more
+;; Please see https://github.com/radian-software/el-patch for more
 ;; information.
 
 ;;; Code:

@@ -47,11 +47,11 @@ The format is based on [Keep a Changelog].
       `load-path` for autoloads to work. This should be taken care of
       automatically by any of the popular Emacs package managers.
 
-[#29]: https://github.com/raxod502/el-patch/issues/29
-[#35]: https://github.com/raxod502/el-patch/issues/35
-[#47]: https://github.com/raxod502/el-patch/issues/47
-[#48]: https://github.com/raxod502/el-patch/issues/48
-[#56]: https://github.com/raxod502/el-patch/pull/56
+[#29]: https://github.com/radian-software/el-patch/issues/29
+[#35]: https://github.com/radian-software/el-patch/issues/35
+[#47]: https://github.com/radian-software/el-patch/issues/47
+[#48]: https://github.com/radian-software/el-patch/issues/48
+[#56]: https://github.com/radian-software/el-patch/pull/56
 
 ## 2.4 (released 2021-12-27)
 ### New features
@@ -63,8 +63,8 @@ The format is based on [Keep a Changelog].
 * Patch forms were not processed when they appeared inside a vector.
   This has been fixed ([#51]).
 
-[#50]: https://github.com/raxod502/el-patch/issues/50
-[#51]: https://github.com/raxod502/el-patch/issues/51
+[#50]: https://github.com/radian-software/el-patch/issues/50
+[#51]: https://github.com/radian-software/el-patch/issues/51
 
 ## 2.3.1 (released 2020-07-16)
 ### Bugs fixed
@@ -72,7 +72,7 @@ The format is based on [Keep a Changelog].
   proceed to check other patches before reporting the error, rather
   than crashing immediately ([#46]).
 
-[#46]: https://github.com/raxod502/el-patch/issues/46
+[#46]: https://github.com/radian-software/el-patch/issues/46
 
 ## 2.3 (released 2020-04-02)
 ### Added
@@ -94,8 +94,8 @@ The format is based on [Keep a Changelog].
   get that error regardless of whether `el-patch` was loaded
   previously ([#30]).
 
-[#30]: https://github.com/raxod502/el-patch/issues/30
-[#39]: https://github.com/raxod502/el-patch/issues/39
+[#30]: https://github.com/radian-software/el-patch/issues/30
+[#39]: https://github.com/radian-software/el-patch/issues/39
 
 ## 2.2.3 (released 2019-04-10)
 ### Enhancements
@@ -111,7 +111,7 @@ The format is based on [Keep a Changelog].
   contain a docstring at all; now, the note is included regardless,
   adding a docstring if one was missing ([#31]).
 
-[#31]: https://github.com/raxod502/el-patch/pull/31
+[#31]: https://github.com/radian-software/el-patch/pull/31
 
 ## 2.2.1 (released 2018-09-04)
 
@@ -135,9 +135,9 @@ This release includes only a minor documentation enhancement.
   note to the end of the docstring indicating that a patch was made
   ([#14]).
 
-[#14]: https://github.com/raxod502/el-patch/issues/14
-[#24]: https://github.com/raxod502/el-patch/issues/24
-[#25]: https://github.com/raxod502/el-patch/issues/25
+[#14]: https://github.com/radian-software/el-patch/issues/14
+[#24]: https://github.com/radian-software/el-patch/issues/24
+[#25]: https://github.com/radian-software/el-patch/issues/25
 
 ## 2.1 (released 2018-07-12)
 ### New features
@@ -301,16 +301,16 @@ This release includes only a minor documentation enhancement.
   * Functions for removing patches:
     * `el-patch-unpatch`
 
-[#2]: https://github.com/raxod502/el-patch/issues/2
-[#4]: https://github.com/raxod502/el-patch/issues/4
-[#5]: https://github.com/raxod502/el-patch/issues/5
-[#7]: https://github.com/raxod502/el-patch/issues/7
-[#8]: https://github.com/raxod502/el-patch/issues/8
-[#9]: https://github.com/raxod502/el-patch/issues/9
-[#10]: https://github.com/raxod502/el-patch/issues/10
-[#11]: https://github.com/raxod502/el-patch/pull/11
-[#13]: https://github.com/raxod502/el-patch/issues/13
-[#15]: https://github.com/raxod502/el-patch/issues/15
+[#2]: https://github.com/radian-software/el-patch/issues/2
+[#4]: https://github.com/radian-software/el-patch/issues/4
+[#5]: https://github.com/radian-software/el-patch/issues/5
+[#7]: https://github.com/radian-software/el-patch/issues/7
+[#8]: https://github.com/radian-software/el-patch/issues/8
+[#9]: https://github.com/radian-software/el-patch/issues/9
+[#10]: https://github.com/radian-software/el-patch/issues/10
+[#11]: https://github.com/radian-software/el-patch/pull/11
+[#13]: https://github.com/radian-software/el-patch/issues/13
+[#15]: https://github.com/radian-software/el-patch/issues/15
 
 [melpa/melpa#4512]: https://github.com/melpa/melpa/pull/4512#issuecomment-274682089
 

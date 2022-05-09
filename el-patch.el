@@ -1,10 +1,10 @@
 ;;; el-patch.el --- Future-proof your Elisp -*- lexical-binding: t -*-
 
-;; Copyright (C) 2016 Radon Rosborough
+;; Copyright (C) 2016-2022 Radian LLC and contributors
 
-;; Author: Radon Rosborough <radon.neon@gmail.com>
+;; Author: Radian LLC <contact+el-patch@radian.codes>
 ;; Created: 31 Dec 2016
-;; Homepage: https://github.com/raxod502/el-patch
+;; Homepage: https://github.com/radian-software/el-patch
 ;; Keywords: extensions
 ;; Package-Requires: ((emacs "26"))
 ;; SPDX-License-Identifier: MIT
@@ -36,7 +36,7 @@
 ;; definition by el-patch so you will know when to update your copy of
 ;; the definition.
 
-;; Please see https://github.com/raxod502/el-patch for more
+;; Please see https://github.com/radian-software/el-patch for more
 ;; information.
 
 ;;; Code:
@@ -64,7 +64,7 @@
   "Future-proof your Emacs Lisp customizations!"
   :prefix "el-patch-"
   :group 'lisp
-  :link '(url-link :tag "GitHub" "https://github.com/raxod502/el-patch")
+  :link '(url-link :tag "GitHub" "https://github.com/radian-software/el-patch")
   :link '(emacs-commentary-link :tag "Commentary" "el-patch"))
 
 (defcustom el-patch-use-aggressive-defvar nil

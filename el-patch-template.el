@@ -4,7 +4,7 @@
 
 ;; Author: Al Haji-Ali <abdo.haji.ali@gmail.com>
 ;; Created: 1 March 2021
-;; Homepage: https://github.com/raxod502/el-patch
+;; Homepage: https://github.com/radian-software/el-patch
 ;; Keywords: extensions
 ;; Package-Requires: ((emacs "26"))
 ;; SPDX-License-Identifier: MIT
@@ -35,7 +35,7 @@
 ;;     (save-buffers-kill-emacs)
 ;;     (restart-emacs--launch-other-emacs restart-args)))
 ;;
-;; Please see https://github.com/raxod502/el-patch for more
+;; Please see https://github.com/radian-software/el-patch for more
 ;; information.
 
 ;;; Code:

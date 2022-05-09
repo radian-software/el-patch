@@ -625,7 +625,7 @@ However, if you dynamically bind `el-patch-variant` to a different
 (symbol) value for each call, then the latter patch is still the one
 that takes effect, but `el-patch` retains a record of both patches,
 meaning they can be inspected and validated individually. See
-[#29](https://github.com/raxod502/el-patch/issues/29).
+[#29](https://github.com/radian-software/el-patch/issues/29).
 
 ## Usage with byte-compiled init-file
 
@@ -671,7 +671,7 @@ It doesn't seem to crash [my Emacs][radian], at least.
 ## Contributor guide
 
 Please see [the contributor guide for my
-projects](https://github.com/raxod502/contributor-guide).
+projects](https://github.com/radian-software/contributor-guide).
 
 [installation]: #installation
 [lazy-loading]: #lazy-loading-packages
@@ -684,6 +684,6 @@ projects](https://github.com/raxod502/contributor-guide).
 [ivy]: https://github.com/abo-abo/swiper
 [melpa]: http://melpa.org
 [package.el]: https://www.gnu.org/software/emacs/manual/html_node/emacs/Packages.html
-[radian]: https://github.com/raxod502/radian
+[radian]: https://github.com/radian-software/radian
 [straight.el]: https://github.com/raxod502/straight.el
 [use-package]: https://github.com/jwiegley/use-package
