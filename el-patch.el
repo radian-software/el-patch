@@ -151,6 +151,11 @@ loaded. You can toggle the `use-package' integration later using
   "Non-nil means to validate patches when byte-compiling."
   :type 'boolean)
 
+(defcustom el-patch-use-advice nil
+  "Types for which el-patch should use Emacs' advice system for patching.
+Typically should be \\='(`defun' `cl-defun')."
+  :type 'list)
+
 ;;;; Internal variables
 
 (defvar el-patch-variant nil
@@ -565,9 +570,31 @@ PATCH-DEFINITION is an unquoted list starting with `defun',
            ;; wrong).
            ,register-patch
            ;; Now we actually overwrite the current definition.
-           (el-patch--stealthy-eval
-            ,definition
-            "This function was patched by `el-patch'."))))))
+           ,(if (and (member type el-patch-use-advice)
+                     (eq
+                      ;; Get original name
+                      (cadr (el-patch--resolve-definition
+                             (cl-subseq patch-definition 0 2)
+                             nil))
+                      name))
+                ;; Use advice system
+                (let ((advice-name (intern (format "%S@el-patch--advice"
+                                                   name))))
+                  `(progn
+                     (el-patch--stealthy-eval
+                      ,(append
+                        (list (car definition) ;; Same type
+                              advice-name)     ;; Different name
+                        ;; Rest is the same
+                        (cddr definition))
+                      ,(format
+                        "This advice was defined by `el-patch' for `%S'."
+                        name))
+                     (advice-add (quote ,name)
+                                 :override (quote ,advice-name))))
+              `(el-patch--stealthy-eval
+                ,definition
+                "This function was patched by `el-patch'.")))))))
 
 ;;;;; Removing patches
 
@@ -579,10 +606,18 @@ patched. NAME, TYPE, and VARIANT are as returned by
 `el-patch-get'."
   (interactive (el-patch--select-patch))
   (if-let ((patch-definition (el-patch-get name type variant)))
-      (eval `(el-patch--stealthy-eval
-              ,(el-patch--resolve-definition
-                patch-definition nil)
-              "This function was patched and then unpatched by `el-patch'."))
+      (if (and (member (car patch-definition) el-patch-use-advice)
+               (eq (cadr (el-patch--resolve-definition
+                          (cl-subseq patch-definition 0 2)
+                          t))
+                   name))
+          (advice-remove name
+                         (intern (format "%S@el-patch--advice" name)))
+        (eval
+         `(el-patch--stealthy-eval
+           ,(el-patch--resolve-definition
+             patch-definition nil)
+           "This function was patched and then unpatched by `el-patch'.")))
     (error "There is no patch for %S %S" type name)))
 
 ;;;; Defining patch types
