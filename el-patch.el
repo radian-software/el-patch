@@ -152,8 +152,7 @@ loaded. You can toggle the `use-package' integration later using
   :type 'boolean)
 
 (defcustom el-patch-use-advice nil
-  "Types for which el-patch should use Emacs' advice system for patching.
-Typically should be \\='(`defun' `cl-defun')."
+  "Non-nil causes el-patch to use Emacs' advice system for patching."
   :type 'list)
 
 ;;;; Internal variables
@@ -570,13 +569,21 @@ PATCH-DEFINITION is an unquoted list starting with `defun',
            ;; wrong).
            ,register-patch
            ;; Now we actually overwrite the current definition.
-           ,(if (and (member type el-patch-use-advice)
-                     (eq
-                      ;; Get original name
-                      (cadr (el-patch--resolve-definition
-                             (cl-subseq patch-definition 0 2)
-                             nil))
-                      name))
+           ,(if (and el-patch-use-advice
+                     ;; Only advice functions
+                     (let* ((props (alist-get type el-patch-deftype-alist))
+                            (classifier (plist-get props :classify)))
+                       (and classifier
+                            (equal
+                             (car (funcall classifier definition))
+                             'function)))
+                     (let ((orig-def (el-patch--resolve-definition
+                                      (cl-subseq patch-definition 0 3)
+                                      nil)))
+                       ;; Same name and same argument count
+                       (and (equal name (nth orig-def 1))
+                            (equal (length (nth definition 2))
+                                   (length (nth orig-def 2))))))
                 ;; Use advice system
                 (let ((advice-name (intern (format "%S@el-patch--advice"
                                                    name))))
@@ -606,7 +613,7 @@ patched. NAME, TYPE, and VARIANT are as returned by
 `el-patch-get'."
   (interactive (el-patch--select-patch))
   (if-let ((patch-definition (el-patch-get name type variant)))
-      (if (and (member (car patch-definition) el-patch-use-advice)
+      (if (and el-patch-use-advice
                (eq (cadr (el-patch--resolve-definition
                           (cl-subseq patch-definition 0 2)
                           t))
