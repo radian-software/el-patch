@@ -148,8 +148,8 @@ TABLE is a hashtable containing the bindings of `el-patch-let'"
              (mapcar
               (lambda (kv)
                 (unless (symbolp (car kv))
-                  (error "Non-symbol (%s) as binding for `el-patch-let'"
-                         (car kv)))
+                  (user-error "Non-symbol (%s) as binding for `el-patch-let'"
+                              (car kv)))
                 (list (car kv)
                       (cons (cadr kv)
                             ;; The cdr is the resolution, nil for
@@ -373,7 +373,7 @@ remaining unmatched forms."
                                (cons match template)
                              template)
                            remainder-form)
-                ('no-match
+                (no-match
                  ;; Ultimately, the matching did not
                  ;; work, so undo the symbol resolution
                  (puthash template old-entry table)
@@ -474,7 +474,7 @@ matched to a form in DEFINITION."
                                                  (plist-get ptemplate :old))))
         (when matched
           (when matched-ptemplate
-            (error "A form matches multiple templates"))
+            (user-error "A form matches multiple templates"))
           (setq matched-forms-count matched
                 matched-ptemplate ptemplate))))
     (cond
@@ -486,7 +486,7 @@ matched to a form in DEFINITION."
                                           ptemplates))
         definition))
      ((plist-get matched-ptemplate :matched)
-      (error "A template matches multiple forms"))
+      (user-error "A template matches multiple forms"))
      ((and (consp definition)
            (or
             (el-patch--any-template-p (car definition)
@@ -496,7 +496,7 @@ matched to a form in DEFINITION."
              (el-patch--any-template-p (cdr definition)
                                        ptemplates
                                        (1- matched-forms-count)))))
-      (error "A form matching a template has subforms matching\
+      (user-error "A form matching a template has subforms matching\
  other templates"))
      (t
       ;; The old resolution of the template uniquely matches the definition
@@ -571,21 +571,28 @@ being patched; TYPE is a symbol `defun', `defmacro', etc."
          (templates (cdr template-def))
          (old-name (car (el-patch--resolve unresolved-name nil))))
     (unless template-def
-      (error "The template definition of %S was not found" name))
+      (user-error "Resolving `%s' template failed -- \
+ Cannot find template definition" name))
     (let* ((definition (or (el-patch--locate (list type old-name))
-                           (error "Cannot find definition for `%s'"
-                                  name)))
+                           (user-error "Resolving `%s' template failed --\
+ Cannot find definition" name)))
            (ptemplates (mapcar
                         (lambda (template)
                           (list :template template
                                 :old (el-patch--partial-old-resolve template)
                                 :matched nil))
                         templates))
-           (patch (prog1 (el-patch--apply-template definition ptemplates)
+           (patch (prog1
+                      (condition-case err-handle
+                          (el-patch--apply-template definition ptemplates)
+                        (error
+                         (user-error "Resolving `%s' template failed -- %s"
+                                     name (cdr err-handle))))
                     (cl-dolist (ptemplate ptemplates)
                       (unless (plist-get ptemplate :matched)
-                        (error
-                         "At least one template did not match any form")))))
+                        (user-error
+                         "Resolving `%s' template failed -- at least \
+one template did not match any form in" name)))))
            (props (alist-get type el-patch-deftype-alist)))
       (cons (intern
              (or (plist-get props :macro-name)
@@ -699,8 +706,10 @@ if `el-patch-warn-on-eval-template' is non-nil, print a warning."
        (when el-patch-warn-on-eval-template
          (display-warning 'el-patch "Runtime evaluation of el-patch templates \
 can be slow, consider byte-compiling."))
-       (el-patch-eval-template resolved-name
-                               (car qtype-name)))))
+       (condition-case-unless-debug err
+           (el-patch-eval-template resolved-name
+                                   (car qtype-name))
+         (error (display-warning 'el-patch (error-message-string err)))))))
 
 
 ;; Stolen from `el-patch-validate'
@@ -745,8 +754,8 @@ See also `el-patch-validate-all'."
            (error
             (progn
               (display-warning 'el-patch
-                               (format "`%S' failed -- %s" name
-                                       (cadr err-handle)))
+                               (format "`%s' failed -- %s" name
+                                       (error-message-string err-handle)))
               nil)))
     (when run-hooks
       (run-hooks 'el-patch-post-validate-hook))))
