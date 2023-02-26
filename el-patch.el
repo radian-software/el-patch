@@ -618,7 +618,7 @@ PATCH-DEFINITION is an unquoted list starting with `defun',
                                  :override (quote ,advice-name))))
               `(el-patch--stealthy-eval
                 ,definition
-                "This function was patched by `el-patch'.")))))))
+                "This definition was patched by `el-patch'.")))))))
 
 ;;;;; Removing patches
 
