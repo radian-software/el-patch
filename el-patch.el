@@ -235,7 +235,7 @@ This function lives halfway between `copy-sequence' and
     tree))
 
 (defun el-patch--advice-name (name variant-name)
-  "Return advice name for a given NAME, TYPE and VARIANT-NAME."
+  "Return advice name for a given NAME and VARIANT-NAME."
   (intern
    (format "%S@%s@el-patch--advice"
            name
