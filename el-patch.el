@@ -152,7 +152,8 @@ loaded. You can toggle the `use-package' integration later using
   :type 'boolean)
 
 (defcustom el-patch-use-advice nil
-  "Non-nil causes el-patch to use Emacs' advice system for patching."
+  "Non-nil causes el-patch to use Emacs' advice system for patching.
+This can be set globally or bound dynamically around a patch."
   :type 'list)
 
 ;;;; Internal variables
