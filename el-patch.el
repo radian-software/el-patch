@@ -152,9 +152,16 @@ loaded. You can toggle the `use-package' integration later using
   :type 'boolean)
 
 (defcustom el-patch-use-advice nil
-  "Non-nil causes el-patch to use Emacs' advice system for patching.
-This can be set globally or bound dynamically around a patch."
-  :type 'list)
+  "Non-nil causes el-patch to use Emacs' advice system for patching functions.
+This can be set globally or bound dynamically around a patch.
+
+An advice is used if the patched function has the same name and
+the same number of arguments as the original.
+
+An advice takes precedence over subsequent non-advice patches.
+You may need to un-advice or un-patch a function to apply a new
+patch."
+  :type 'boolean)
 
 ;;;; Internal variables
 
@@ -227,12 +234,12 @@ This function lives halfway between `copy-sequence' and
       (cons (car tree) (el-patch--copy-semitree (cdr tree)))
     tree))
 
-(defun el-patch--advice-name (name variant)
-  "Return advice name for a given NAME, TYPE and VARIANT."
+(defun el-patch--advice-name (name variant-name)
+  "Return advice name for a given NAME, TYPE and VARIANT-NAME."
   (intern
    (format "%S@%s@el-patch--advice"
            name
-           (if variant (format "%S" el-patch-variant) ""))))
+           (if variant-name (format "%S" el-patch-variant) ""))))
 
 (defun el-patch--resolve (form new &optional table)
   "Resolve a patch FORM.
@@ -592,6 +599,10 @@ PATCH-DEFINITION is an unquoted list starting with `defun',
           (eval register-patch t)
           (el-patch-validate name type 'nomsg nil
                              (cons advise el-patch-variant)))
+        ;; Check that `el-patch-variant' is not a cons or a string
+        (when (or (consp el-patch-variant)
+                  (stringp el-patch-variant))
+          (error "`el-patch-variant' cannot be a string or a cons"))
         `(progn
            ;; Register the patch in our hash. We want to do this right
            ;; away so that if there is an error then at least the user
