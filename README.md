@@ -627,6 +627,12 @@ that takes effect, but `el-patch` retains a record of both patches,
 meaning they can be inspected and validated individually. See
 [#29](https://github.com/radian-software/el-patch/issues/29).
 
+You may also define patches of functions as `:override` advices
+instead of overriding the original definition. This is done by setting
+`el-patch-use-advice` to a non-nil value (either dynamically around a
+patch or globally). The patched function must have the same name and
+number of arguments as the original function.
+
 ## Usage with byte-compiled init-file
 
 `el-patch` does not need to be loaded at runtime just to define
