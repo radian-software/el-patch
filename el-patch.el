@@ -197,6 +197,9 @@ when a patch renames a symbol.")
 (defvar el-patch--not-present (make-symbol "el-patch--not-present")
   "Value used as a default argument to `gethash'.")
 
+(defvar el-patch--concat-function #'concat
+  "Function to concatenate strings when resolving patches.")
+
 ;;;; Resolving patches
 
 (defmacro el-patch--with-puthash (table kvs &rest body)
@@ -346,7 +349,8 @@ their bindings."
            (when (<= (length form) 1)
              (error "Not enough arguments (%d) for `el-patch-concat'"
                     (1- (length form))))
-           (list (apply #'concat (cl-mapcan resolve (cdr form)))))
+           (list (apply el-patch--concat-function
+                        (cl-mapcan resolve (cdr form)))))
           (_
            (let ((car-forms (funcall resolve (car form)))
                  (cdr-forms (funcall resolve (cdr form))))

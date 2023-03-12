@@ -523,12 +523,11 @@ Similar to `el-patch--resolve' with a special treatment for
 `el-patch-concat'. Specifically, if the arguments of
 `el-patch-concat' have `...' in them, it is not resolved but
 changed to `el-patch-template--concat'."
-  (cl-letf* ((old-concat (symbol-function 'concat))
-             ((symbol-function 'concat)
-              (lambda (&rest args)
-                (if (cl-some (lambda (x) (equal x '...)) args)
-                    (cons 'el-patch-template--concat args)
-                  (apply old-concat args)))))
+  (let ((el-patch--concat-function
+         (lambda (args)
+           (if (cl-some (lambda (x) (equal x '...)) args)
+               (cons 'el-patch-template--concat args)
+             (apply #'concat args)))))
     (el-patch--resolve forms nil)))
 
 ;; Stolen from el-patch--select
