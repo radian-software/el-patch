@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
+## Unreleased
+### Enhancements
+* `el-patch-get` will try and return the only variant of a function
+  when you don't provide a specific `variant`.  This makes it so that
+  you can call functions such as `el-patch-validate` non-interactively
+  without providing `variant`.
+
 ## 3.0 (released 2022-04-17)
 ### Breaking changes
 * The arguments to `el-patch-feature` after the feature name are no

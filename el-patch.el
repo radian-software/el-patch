@@ -1059,10 +1059,26 @@ and TYPE is a symbol `defun', `defmacro', etc. If the patch could
 not be found, return nil.
 
 If VARIANT is provided, select that variant of the patch. This is
-useful only if patches were defined using `el-patch-variant'."
-  (condition-case nil
-      (gethash variant (gethash type (gethash name el-patch--patches)))
-    (error nil)))
+useful only if patches were defined using `el-patch-variant'.  If
+VARIANT is not provided and more than one variant is present for
+the patch, `wrong-type-argument' is signaled."
+  (let* ((types (gethash name el-patch--patches))
+         (variants (and types (gethash type types))))
+    (cond
+     ((not variants)
+      nil)
+     (variant
+      (gethash variant variants))
+     (t
+      (let (only-value)
+        (maphash (lambda (_ value)
+                   (when only-value
+                     (error 'wrong-type-argument
+                            "Must choose a variant for `%s' type %s."
+                            name type))
+                   (setq only-value value))
+                 variants)
+        only-value)))))
 
 (defun el-patch--select-patch ()
   "Use `completing-read' to select a patched function.
