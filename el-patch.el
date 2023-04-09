@@ -1061,7 +1061,11 @@ not be found, return nil.
 If VARIANT is provided, select that variant of the patch. This is
 useful only if patches were defined using `el-patch-variant'."
   (condition-case nil
-      (gethash variant (gethash type (gethash name el-patch--patches)))
+      (gethash
+       (if (consp variant)
+           variant
+         (cons nil variant))
+       (gethash type (gethash name el-patch--patches)))
     (error nil)))
 
 (defun el-patch--select-patch ()
