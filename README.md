@@ -561,9 +561,9 @@ search for the forms that we want to patch in the original definition
 and patch only those. Enter `el-patch` templates.
 
 As an example, say we want to define a patch of `restart-emacs` so
-that the it starts a new emacs instance without killing the current
-one. Instead of defining a patch that includes the complete definition
-of `restart-emacs`, we can define a template as follows
+that it starts a new emacs instance without killing the current one.
+Instead of defining a patch that includes the complete definition of
+`restart-emacs`, we can define a template as follows
 
     (el-patch-define-template
       (defun (el-patch-swap restart-emacs radian-new-emacs))
