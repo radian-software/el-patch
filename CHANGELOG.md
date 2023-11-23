@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
+## 3.1 (released 2023-11-23)
+### Features
+* New user option `el-patch-use-advice` which can be customized to
+  have `el-patch` install patches using the built-in advice system
+  instead of overwriting function definitions directly.
+
+### Enhancements
+* Some minor improvements to the way errors are reported from
+  `el-patch-template`.
+
 ## 3.0 (released 2022-04-17)
 ### Breaking changes
 * The arguments to `el-patch-feature` after the feature name are no
