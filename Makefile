@@ -51,6 +51,7 @@ longlines: ## Check for long lines
 	        | sed '/[l]onglines-start/,/longlines-stop/d' \
 	        | grep -E '.{80}' \
 	        | grep -E -v '\[.+\]: (#|http)' \
+		| grep -E -v 'https?://' \
 	        | sed "s/^/$$file:long line: /" \
 	        | grep . && exit 1 || true ;\
 	done
