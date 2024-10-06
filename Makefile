@@ -89,3 +89,16 @@ clean: ## Remove build artifacts
 .PHONY: docker
 docker: ## Start a Docker shell; e.g. make docker VERSION=25.3
 	@scripts/docker.bash "$(VERSION)" "$(CMD)"
+
+BUTTERCUP_VER := 1.34
+BUTTERCUP := vendor/buttercup-$(BUTTERCUP_VER)
+
+$(BUTTERCUP):
+	@rm -rf $(BUTTERCUP) && mkdir -p $(BUTTERCUP)
+	@curl -fsSL https://github.com/jorgenschaefer/emacs-buttercup/archive/refs/tags/v$(BUTTERCUP_VER).tar.gz -o $(BUTTERCUP).tar.gz
+	@tar -xf $(BUTTERCUP).tar.gz --strip-components=1 -C $(BUTTERCUP)
+	@rm $(BUTTERCUP).tar.gz
+
+.PHONY: unit
+unit: $(BUTTERCUP) ## Run unit tests
+	@$(BUTTERCUP)/bin/buttercup test -L $(BUTTERCUP) -L .
