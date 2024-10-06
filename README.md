@@ -578,7 +578,6 @@ Instead of defining a patch that includes the complete definition of
         ...
         (el-patch-swap "restarted" "started")
         ...)
-      (restart-args ...)
       (el-patch-remove (kill-emacs-hook ...))
       (el-patch-swap
         (save-buffers-kill-emacs)
