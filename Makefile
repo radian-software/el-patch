@@ -51,6 +51,7 @@ longlines: ## Check for long lines
 	        | sed '/[l]onglines-start/,/longlines-stop/d' \
 	        | grep -E '.{80}' \
 	        | grep -E -v '\[.+\]: (#|http)' \
+		| grep -E -v 'https?://' \
 	        | sed "s/^/$$file:long line: /" \
 	        | grep . && exit 1 || true ;\
 	done
@@ -89,3 +90,16 @@ clean: ## Remove build artifacts
 .PHONY: docker
 docker: ## Start a Docker shell; e.g. make docker VERSION=25.3
 	@scripts/docker.bash "$(VERSION)" "$(CMD)"
+
+BUTTERCUP_VER := 1.34
+BUTTERCUP := vendor/buttercup-$(BUTTERCUP_VER)
+
+$(BUTTERCUP):
+	@rm -rf $(BUTTERCUP) && mkdir -p $(BUTTERCUP)
+	@curl -fsSL https://github.com/jorgenschaefer/emacs-buttercup/archive/refs/tags/v$(BUTTERCUP_VER).tar.gz -o $(BUTTERCUP).tar.gz
+	@tar -xf $(BUTTERCUP).tar.gz --strip-components=1 -C $(BUTTERCUP)
+	@rm $(BUTTERCUP).tar.gz
+
+.PHONY: unit
+unit: $(BUTTERCUP) ## Run unit tests
+	@$(BUTTERCUP)/bin/buttercup test -L $(BUTTERCUP) -L .
