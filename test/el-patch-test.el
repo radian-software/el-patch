@@ -121,6 +121,75 @@
 
        )
       (testcases
+       "works with examples from the magit-file-icons package"
+
+       ((defun magit-diff-insert-file-section
+            (file orig status modes rename header binary long-status)
+          (magit-insert-section
+              ( file file
+                (or (equal status "deleted") (derived-mode-p 'magit-status-mode))
+                :source (and (not (equal orig file)) orig)
+                :header header
+                :binary binary)
+            (insert (propertize (format "%-10s %s" status
+                                        (if (or (not orig) (equal orig file))
+                                            file
+                                          (format "%s -> %s" orig file)))
+                                'font-lock-face 'magit-diff-file-heading))
+            (cond ((and binary long-status)
+                   (insert (format " (%s, binary)" long-status)))
+                  ((or binary long-status)
+                   (insert (format " (%s)" (if binary "binary" long-status)))))
+            (magit-insert-heading)
+            (when modes
+              (magit-insert-section (hunk '(chmod))
+                (insert modes)
+                (magit-insert-heading)))
+            (when rename
+              (magit-insert-section (hunk '(rename))
+                (insert rename)
+                (magit-insert-heading)))
+            (magit-wash-sequence #'magit-diff-wash-hunk)))
+
+        ((defun magit-diff-insert-file-section)
+         (format (el-patch-swap "%-10s %s" "%-10s %s %s") status
+                 (el-patch-add (nerd-icons-icon-for-file (or orig file)))
+                 (if (or (not orig) (equal orig file))
+                     file
+                   (format (el-patch-swap "%s -> %s" "%s -> %s %s") orig
+                           (el-patch-add (nerd-icons-icon-for-file file)) file))))
+
+        (defun magit-diff-insert-file-section
+            (file orig status modes rename header binary long-status)
+          (magit-insert-section
+              ( file file
+                (or (equal status "deleted") (derived-mode-p 'magit-status-mode))
+                :source (and (not (equal orig file)) orig)
+                :header header
+                :binary binary)
+            (insert (propertize (format (el-patch-swap "%-10s %s" "%-10s %s %s") status
+                                        (el-patch-add (nerd-icons-icon-for-file (or orig file)))
+                                        (if (or (not orig) (equal orig file))
+                                            file
+                                          (format (el-patch-swap "%s -> %s" "%s -> %s %s") orig
+                                                  (el-patch-add (nerd-icons-icon-for-file file)) file)))
+                                'font-lock-face 'magit-diff-file-heading))
+            (cond ((and binary long-status)
+                   (insert (format " (%s, binary)" long-status)))
+                  ((or binary long-status)
+                   (insert (format " (%s)" (if binary "binary" long-status)))))
+            (magit-insert-heading)
+            (when modes
+              (magit-insert-section (hunk '(chmod))
+                (insert modes)
+                (magit-insert-heading)))
+            (when rename
+              (magit-insert-section (hunk '(rename))
+                (insert rename)
+                (magit-insert-heading)))
+            (magit-wash-sequence #'magit-diff-wash-hunk))))
+       )
+      (testcases
        "works with the example from the readme"
 
        ((defun restart-emacs (&optional args)
@@ -153,6 +222,7 @@ with which Emacs should be restarted."
             (if restart-emacs--inhibit-kill-p
                 (restart-emacs--launch-other-emacs restart-args)
               (save-buffers-kill-emacs))))
+
         ((defun (el-patch-swap restart-emacs radian-new-emacs))
          (el-patch-concat
            (el-patch-swap
@@ -169,6 +239,7 @@ with which Emacs should be restarted."
          (el-patch-swap
            (save-buffers-kill-emacs)
            (restart-emacs--launch-other-emacs restart-args)))
+
         (defun restart-emacs (&optional args)
           (el-patch-concat
             (el-patch-swap
