@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
+## Unreleased
+### Bugs fixed
+* Using `el-patch-literal` could result in incorrect patch generation
+  in some cases. This is fixed.
+
 ## 3.1 (released 2023-11-23)
 ### Features
 * New user option `el-patch-use-advice` which can be customized to
