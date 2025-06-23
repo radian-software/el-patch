@@ -250,7 +250,7 @@ Return a list of forms to be spliced into the surrounding
 s-expression. Resolve in favor of the original version if NEW is
 nil; otherwise resolve in favor of the new version. TABLE is a
 hash table of `el-patch-let' bindings, which maps symbols to
-their bindings."
+their bindings. The return value may be destructively modified."
   (let ((table (or table (make-hash-table :test 'equal))))
     (cond
      ((consp form)
@@ -344,7 +344,7 @@ their bindings."
            (when (<= (length form) 1)
              (error "Not enough arguments (%d) for `el-patch-literal'"
                     (1- (length form))))
-           (cdr form))
+           (el-patch--copy-semitree (cdr form)))
           ((quote el-patch-concat)
            (when (<= (length form) 1)
              (error "Not enough arguments (%d) for `el-patch-concat'"
