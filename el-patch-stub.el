@@ -8,7 +8,7 @@
 ;; Keywords: extensions
 ;; Package-Requires: ((emacs "26"))
 ;; SPDX-License-Identifier: MIT
-;; Version: 2.3.1
+;; Version: 3.1.1
 
 ;;; Commentary:
 

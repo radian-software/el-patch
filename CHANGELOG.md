@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
-## Unreleased
+## 3.1.1 (released 2025-08-15)
 ### Bugs fixed
 * Using `el-patch-literal` could result in incorrect patch generation
   in some cases. This is fixed.
