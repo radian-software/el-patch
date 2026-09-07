@@ -165,6 +165,7 @@ patch."
 
 ;;;; Internal variables
 
+;;;###autoload
 (defvar el-patch-variant nil
   "Advanced variable for defining patch variants.
 This variable may be used to define multiple different patches
@@ -883,6 +884,8 @@ DEFINITION is a list starting with `defun' or similar."
   :font-lock el-patch-fontify-as-variable
   :declare ((doc-string 3)
             (indent defun)))
+
+;;;###autoload(el-patch--deftype-stub-teardown)
 
 ;;;; Validating patches
 
