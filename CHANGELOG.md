@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog].
 
+## Unreleased
+### Bugs fixed
+* The autoloading logic was a bit wrong and would lead to `el-patch`
+  itself being loaded, just from activating the autoloads. This has
+  been fixed, so now activating the autoloads does just that, and
+  `el-patch` itself is only loaded when you actually use an autoloaded
+  function.
+
 ## 3.1.1 (released 2025-08-15)
 ### Bugs fixed
 * Using `el-patch-literal` could result in incorrect patch generation

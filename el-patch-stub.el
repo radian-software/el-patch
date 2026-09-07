@@ -28,7 +28,8 @@
 This temporary replacement for the real functionality just takes
 care of the `declare' forms, and leaves everything else for
 later."
-  (unless (fboundp 'el-patch-deftype)
+  (when (autoloadp (symbol-function 'el-patch-deftype))
+    (put 'el-patch-deftype 'orig-function (symbol-function 'el-patch-deftype))
     (defmacro el-patch-deftype (type &rest kwargs)
       (let ((name (intern (format "el-patch-%S" type)))
             (props (plist-get kwargs :declare)))
@@ -36,6 +37,13 @@ later."
            (autoload ',name "el-patch" nil nil t)
            (put ',name 'doc-string-elt ',(alist-get 'doc-string props))
            (put ',name 'lisp-indent-function ',(alist-get 'indent props)))))))
+
+(defun el-patch--deftype-stub-teardown ()
+  "Reset `el-patch-deftype' back to its original value, if needed.
+This cleans up for `el-patch--deftype-stub-setup'."
+  (when-let ((orig (get 'el-patch-deftype 'orig-function)))
+    (fset 'el-patch-deftype orig)
+    (put 'el-patch-deftype 'orig-function nil)))
 
 (provide 'el-patch-stub)
 
